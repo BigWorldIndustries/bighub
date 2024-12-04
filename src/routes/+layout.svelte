@@ -1,11 +1,35 @@
 <script lang="ts">
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { IconBrandDiscordFilled } from '@tabler/icons-svelte';
+	import { IconBrandGithub } from '@tabler/icons-svelte';
+	import { IconFlameFilled } from '@tabler/icons-svelte';
+	import { IconBrandTwitch } from '@tabler/icons-svelte';
+	import { onMount, onDestroy } from "svelte";
 
 	// Floating UI for Popups
 	import { computePosition, autoUpdate, flip, shift, offset, arrow } from '@floating-ui/dom';
 	import { storePopup } from '@skeletonlabs/skeleton';
 	storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
+
+	let windowWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+	$: widescreen = typeof window == 'undefined' || windowWidth > 700;
+
+	const handleResize = () => {
+		windowWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+	};
+
+	onMount(() => {
+		if (typeof window !== 'undefined') {
+			window.addEventListener('resize', handleResize);
+		}
+	});
+
+	onDestroy(() => {
+		if (typeof window !== 'undefined') {
+		window.removeEventListener('resize', handleResize);
+		}
+	});
 </script>
 
 <!-- App Shell -->
@@ -24,7 +48,10 @@
 					target="_blank"
 					rel="noreferrer"
 				>
-					Discord
+					<IconBrandDiscordFilled/>
+					{#if widescreen}
+						Discord
+					{/if}
 				</a>
 				<a
 					class="btn btn-sm variant-ghost-surface"
@@ -32,7 +59,10 @@
 					target="_blank"
 					rel="noreferrer"
 				>
-					Twitch
+					<IconBrandTwitch/>
+					{#if widescreen}
+						Twitch
+					{/if}
 				</a>
 				<a
 					class="btn btn-sm variant-ghost-surface"
@@ -40,7 +70,10 @@
 					target="_blank"
 					rel="noreferrer"
 				>
-					Wiki
+					<IconFlameFilled/>
+					{#if widescreen}
+						Wiki
+					{/if}
 				</a>
 				<a
 					class="btn btn-sm variant-ghost-surface"
@@ -48,7 +81,10 @@
 					target="_blank"
 					rel="noreferrer"
 				>
-					GitHub
+					<IconBrandGithub/>
+					{#if widescreen}
+						Github
+					{/if}
 				</a>
 			</svelte:fragment>
 		</AppBar>
