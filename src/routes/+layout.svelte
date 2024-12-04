@@ -5,7 +5,7 @@
 	import { IconBrandGithub } from '@tabler/icons-svelte';
 	import { IconFlameFilled } from '@tabler/icons-svelte';
 	import { IconBrandTwitch } from '@tabler/icons-svelte';
-	import { onMount, onDestroy } from "svelte";
+	import { onMount, onDestroy } from "svelte"; 
 
 	// Floating UI for Popups
 	import { computePosition, autoUpdate, flip, shift, offset, arrow } from '@floating-ui/dom';
@@ -39,7 +39,9 @@
 		<AppBar>
 			<svelte:fragment slot="lead">
 				<img class='logo' src="/images/bigworld-logo.svg" width="48px" alt="fotomize" />
-				<strong class="text-xl">BigHub</strong>
+				{#if widescreen}
+					<strong class="text-xl">BigHub</strong>
+				{/if}
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
 				<a
