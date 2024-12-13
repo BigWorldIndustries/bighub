@@ -10,7 +10,7 @@
             <a class="btn variant-filled" href="" target="_self" rel="noreferrer">
                 Vote for Big World President
             </a>
-            <a class="btn variant-filled" href="" target="_self" rel="noreferrer">
+            <a class="btn variant-filled" href="/electionmap" target="_self" rel="noreferrer">
                 View Live Results Map
             </a>
         </div>
