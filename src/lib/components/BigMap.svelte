@@ -28,7 +28,7 @@
         const name = element.getAttribute('region');
 
         // Log the name to the console
-        console.log(`Hey! You hovered over ${name}`);
+        //console.log(`Hey! You hovered over ${name}`);
         hoveredName = element.getAttribute('region') ?? '';
         // Optionally, you can do more here with the 'name'
     }
@@ -866,7 +866,7 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Tony's Trading Outpost (Walmart)"
+        region="Mo'ru"
 		faction="Shneibler Isles"
 		fill="#009245" 
         d="M276.183,532.438c-0.57,0-1.119-0.058-1.63-0.17c-0.559-0.121-1.093-0.312-1.609-0.496
@@ -898,7 +898,7 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Krustler's Leap"
+        region="Tony's Trading Outpost"
 		faction="Shneibler Isles"
 		fill="#009245" 
         d="M300.128,503.621c-2.158,0-4.358-1.064-6.3-2.004c-0.325-0.157-0.644-0.312-0.95-0.454
@@ -1039,7 +1039,7 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Shneiblerville"
+        region="Shneibler Mainland"
 		faction="Shneibler Isles"
 		fill="#009245" 
         d="M332.88,657.072c-1.665,0-3.297-0.247-4.85-0.735l-0.277-0.086l-0.062-0.284
@@ -1489,7 +1489,7 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Golden Sacks"
+        region="Valor Cliffs"
 		faction="Zazuland"
 		fill="#29ABE2" 
         stroke="white" 

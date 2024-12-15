@@ -1,9 +1,10 @@
 <script lang='ts'>
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Get the SVG file from GitHub repo: https://github.com/geolonia/japanese-prefectures/blob/master/map-full.svg
 	import Prefectures from '$lib/components/BigMap.svelte';
     import { popup, type PopupSettings } from '@skeletonlabs/skeleton';
+    import { voteStore, voteStoreHandlers } from '../../stores/voteStore';
 
 	let language = 'en';
 	let container: any, svg, colorfulSvg, tooltipSvg, tooltip: HTMLSpanElement | null;
@@ -11,16 +12,48 @@
 	let prefectures: any[] = [];
 	let noOfPefectures = 47;
 
+	let intervalId: NodeJS.Timeout;
+
 	const popupHover: PopupSettings = {
 		event: 'hover',
 		target: 'popupHover',
 		placement: 'top'
 	};
 
-	onMount(() => {
+	voteStore.subscribe(store => {
+        console.log(store);
+    });
+
+	onMount(async () => {
+		console.log($voteStore.electionData);
+		await voteStoreHandlers.getElectionData();
+
+		// Start incrementing the offset every second
+		intervalId = setInterval(() => {
+			voteStoreHandlers.incrementOffset();
+		}, 1000);
+	});
+
+	onDestroy(() => {
+		// Clean up the interval
+		clearInterval(intervalId);
 	});
 
 </script>
+
+	<!-- Display the total values -->
+	<div class="totals">
+		<h2>Total Votes</h2>
+		<ul>
+			{#if $voteStore?.electionData?.simvotes != null}
+				{#each Object.entries($voteStore.electionData.simvotes) as [key, value]}
+					<li>
+						<strong>{key}:</strong> {$voteStore.electionData.simvotes[key].total + $voteStore.offset}
+					</li>
+				{/each}
+			{/if}
+		</ul>
+	</div>
 
 <div id="mainContainer" class="flex gap-4 flex-col relative mapcontainer">
 	<div class="flex justify-center" bind:this={container}><Prefectures /></div>
