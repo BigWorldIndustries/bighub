@@ -11,7 +11,8 @@ interface VoteStore extends Store {
 
 export interface ElectionData {
     simvotes: SimVotes,
-    sim_timestamp: string
+    sim_timestamp: string,
+    regions: string[]
 }
 
 export interface SimVotes {
@@ -26,7 +27,7 @@ export const voteStore = writableWithCache<VoteStore>("voteStore", {
     lastAction: null,
     lastActionSuccess: null,
     errorMessage: null,
-    electionData: { simvotes: {}, sim_timestamp: "" },
+    electionData: { simvotes: {}, sim_timestamp: "", regions: [] },
     offset: 55
 });
 

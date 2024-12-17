@@ -1,9 +1,22 @@
 <script lang="ts">
     import { ConicGradient, type ConicStop } from "@skeletonlabs/skeleton";
+    import { voteStore } from '../../stores/voteStore';
 
     let mouseX = 0;
     let mouseY = 0;
-    let hoveredName = '';
+    let hoveredRegion: Region | undefined = undefined;
+    let regions: Regions = {};
+
+    interface Region {
+        name: string;
+        faction: string;
+        imgSrc: string;
+        caption: string;
+    }
+
+    interface Regions {
+        [region: string]: Region
+    }
 
     let data = [
         {
@@ -15,6 +28,25 @@
         }
     ]
 
+	interface CardWithStatsProps {
+		image: string
+		title: string
+		description: string
+		stats: {
+			title: string
+			value: string
+		}[]
+	}
+	const mockdata: CardWithStatsProps = {
+		image:
+			'https://images.unsplash.com/photo-1581889470536-467bdbe30cd0?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=720&q=80',
+		title: 'Running challenge',
+		stats: [
+			{ title: 'Tony', value: '572643' },
+			{ title: 'The Night Patrol', value: '212643' },
+			{ title: 'BigDaddy', value: '554472' }
+		]
+	}
     
     const conicStops: ConicStop[] = [
             { label: 'Tony', color: 'chocolate', start: 0, end: 35 },
@@ -23,18 +55,27 @@
     ];
 
     function handleMouseover(event: MouseEvent) {
-        // Access the element that was hovered over
         const element = event.currentTarget as SVGElement;
-        const name = element.getAttribute('region');
+        const name = element.getAttribute('region') ?? '';
 
-        // Log the name to the console
-        //console.log(`Hey! You hovered over ${name}`);
-        hoveredName = element.getAttribute('region') ?? '';
-        // Optionally, you can do more here with the 'name'
+        if (regions[name]) {
+            hoveredRegion = regions[name];
+        }
+        else {
+            hoveredRegion = {
+                name: element.getAttribute('region') ?? '',
+                faction: element.getAttribute('faction') ?? '',
+                caption: element.getAttribute('caption') ?? '',
+                imgSrc: "/images/" + (element.getAttribute('region') as string)?.toLowerCase()?.replace(/\s/g, "_").replace("'", "") + ".jpg"
+            }
+            regions[name] = hoveredRegion;
+        }
+
+        console.log(hoveredRegion.imgSrc)
     }
 
     function resetHoverTarget(event: MouseEvent) {
-        hoveredName = ''
+        hoveredRegion = undefined
     }
 
     function handleMousemove(event: MouseEvent) {
@@ -45,11 +86,32 @@
 </script>
 
 <!-- Text element that follows the mouse -->
-{#if hoveredName}
-    <div class="card w-80 hover-box" style="left: {mouseX}px; top: {mouseY}px;">
-        <ConicGradient style="left: {mouseX}px; top: {mouseY}px;" stops={conicStops} legend>{hoveredName}</ConicGradient>
+
+    <div class="card w-80 hover-box" style="left: {mouseX}px; top: {mouseY}px;" hidden={!hoveredRegion}>
+        {#each Object.entries(regions) as [key, r]}
+            <img src={r.imgSrc} alt={r.name} class="" hidden={r.name != hoveredRegion?.name} />
+        {/each}
+        <div class="p-4 space-y-6">
+            <div class="flex justify-between items-center">
+                <b>{hoveredRegion?.name}</b>
+                <div class="text-sm opacity-70">{hoveredRegion?.faction}</div>
+            </div>
+            <div class="text-sm opacity-70">{hoveredRegion?.caption}</div>
+        </div>
+        <!-- <hr /> -->
+        <footer class="p-4 border-t border-surface-300-600-token">
+            <div class="flex justify-between">
+                {#each mockdata.stats as item}
+                    <div class="">
+                        <div class="text-sm opacity-70">{item.title}</div>
+                        <b>{item.value}</b>
+                    </div>
+                {/each}
+            </div>
+            <br/>
+            <ConicGradient style="left: {mouseX}px; top: {mouseY}px;" stops={conicStops} legend></ConicGradient>
+        </footer>
     </div>
-{/if}
 
 <svg version="1.1" d="Layer_3" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 468 792" xml:space="preserve" on:mousemove={handleMousemove}>
@@ -98,6 +160,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Zenith"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -120,8 +183,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Pleebletopia"
+        region="Big Town"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -147,6 +211,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Svathwelier Peninsula"
 		faction="Zazuland"
+		caption="A military port turned self-governed trading hub, Svathwelier is home to war veterans, pirates and honest merchants in equal measure, making any passage in the area a high-risk operation."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -167,6 +232,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Kyrenis"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -192,8 +258,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Big Town"
+        region="Tone-a-Lago"
 		faction="Zazuland"
+		caption="A majestic golf retreat owned by Tony with golden fairways, lush hills, and a castle-like clubhouse."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -236,6 +303,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Stellar Reach"
 		faction="Zazuland"
+		caption="Where sea and sky meet, its towering waves glow with ethereal light. Myths say it’s a boundary to the divine, where strange lights pulse beneath the waves like a celestial heartbeat."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -251,6 +319,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Spyre"
 		faction="Zazuland"
+		caption="Unaccustomed visitors are said to return crazed, but it's unclear if it's because of the cold or the magical force that emanates from this land."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -275,6 +344,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Fangs"
 		faction="Zazuland"
+		caption="Jagged peninsulas clawing into the stormy northern sea, constantly battered by crashing waves. Ancient, weathered watchtowers perch atop the peaks."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -305,8 +375,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="The #no-context Backrooms"
+        region="Zaros"
 		faction="Zazuland"
+		caption="The frigid air and shady wanderers that frequent this community are a reminder for visitors that they're a long way from the capital."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -329,6 +400,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Galizea"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -345,6 +417,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Aumasson"
 		faction="Zazuland"
+		caption="Here lies a remote paramilitary base that acts as a bastion for a growing rebellion."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -364,6 +437,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Kalos"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -387,6 +461,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Hoobler's Alley"
 		faction="Zazuland"
+		caption="Quaint villages nestled along the river and surrounding valleys."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -445,6 +520,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Wraith-Smith Forge"
 		faction="Zazuland"
+		caption="Hidden in the mountains of Zazuland, it is home to a secret faction of necromancers."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -458,8 +534,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Apparently the Midwest"
+        region="Mahoney Mountain Pass"
 		faction="Zazuland"
+        caption="Home to the Mahoney Ministry, serves as a passage through the mountains that divide Zazuland and Maharnegonia."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -501,8 +578,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Highlands"
+        region="Monjarnhoe"
 		faction="Zazuland"
+		caption="Serves as a fortified northern gateway to the civilized lands of Zazuland, or a southern gateway to the unknown."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -529,6 +607,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Mount Twilight"
 		faction="Zazuland"
+		caption="The last stop in civilization for those making the Great Climb."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -554,8 +633,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Crownlands"
+        region="Lowlands"
 		faction="Zazuland"
+		caption="Open lands home mostly to critters and wildlife, but some recluse humans find solace in these valleys."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -593,6 +673,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Canadian Department"
 		faction="Zazuland"
+		caption="Inexplicably plagued by constant snowstorms in spite of its neighbors' warm climates, these lands are home to a mysterious holy artifact known as the Hoarfrosted Leaf of the Maple."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -620,6 +701,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Tony's Bonefields"
 		faction="Zazuland"
+		caption="A mostly barren wasteland whose name comes from it being a historical battleground of early Big World conquests."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -644,6 +726,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Teras"
 		faction="Zazuland"
+		caption="There is a lot of history in the old fiefs of this land. The people are hardworking and honorable."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -676,6 +759,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Solace"
 		faction="Shneibler Isles"
+        caption="Many believe here to be the source of the natural magical essense that the islands of Shneibler Isles seem to be imbued with."
 		fill="#009245" 
         d="M241.053,585.5c-0.242,0-0.483-0.015-0.724-0.044c-0.68-0.087-1.881-0.393-2.322-1.467
             c-0.154-0.398-0.167-0.806-0.167-1.189c-0.02-2.292,0.049-4.655,0.201-7.022c0.08-1.114,0.314-2.458,1.433-2.997
@@ -706,6 +790,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Zazu's Hideaway"
 		faction="Shneibler Isles"
+		caption="From a couple of stones on the water to a full-fledged workshop & lab. Gotta kill time somehow when you're exiled."
 		fill="#009245" 
         d="M292.472,566.598c-1.477,0-2.737-1.05-3.357-1.676c-0.244-0.245-0.514-0.507-0.798-0.781
             c-2.276-2.206-5.394-5.227-4.448-8.624c0.155-0.546,0.433-1.016,0.701-1.47c0.273-0.463,0.532-0.9,0.632-1.37l0.028-0.133
@@ -731,6 +816,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Krakenhold"
 		faction="Shneibler Isles"
+		caption="The Deep Riders of Krakenhold are not very welcoming folk, but seeing their giant squid pens with your own eyes might make the trek worth it."
 		fill="#009245" 
         d="M351.68,724.442c-1.121,0-2.243-0.164-3.327-0.322c-0.979-0.143-1.99-0.29-2.973-0.311l-0.209-0.002
             c-0.443,0-0.89,0.021-1.337,0.043c-0.462,0.021-0.925,0.044-1.384,0.044c-0.975,0-1.751-0.104-2.444-0.329
@@ -766,6 +852,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Vinegar Spire"
 		faction="Shneibler Isles"
+		caption="An isolated volcanic island with acidic pools and sulfur-laden air. Home to a reclusive, alchemical tribe."
 		fill="#009245" 
         d="M376.406,740.595c-1.36,0.001-2.493-0.283-3.464-0.866c-1.978-1.192-3.14-3.74-2.961-6.491
             c0.165-2.388,1.236-4.635,2.37-6.708c0.703-1.277,1.389-2.443,2.096-3.565c0.484-0.77,0.973-1.512,1.615-2.133
@@ -799,6 +886,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Raven's Haven (avoid)"
 		faction="Shneibler Isles"
+		caption="TBD"
 		fill="#009245" 
         d="M384.408,692.59c-0.353,0-1.091,0-1.526-0.533c-0.502-0.63-0.229-1.446-0.066-1.935
             c0.669-2.043,0.51-4.302,0.355-6.485c-0.037-0.522-0.073-1.043-0.1-1.562c-0.131-2.393-0.052-5.844,2.135-8.168
@@ -836,6 +924,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Adventurer's Gateway"
 		faction="Shneibler Isles"
+		caption="TBD"
 		fill="#009245" 
         d="M410.378,603.479c-1.088,0-3.762-4.1-3.782-4.141c-0.881-1.7-1.3-3.605-1.246-5.661
             c0.065-2.265,0.661-4.572,1.237-6.804c0.323-1.252,0.657-2.546,0.881-3.783c0.175-0.984,0.414-1.998,1.239-2.596
@@ -866,8 +955,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Mo'ru"
+        region="Moru"
 		faction="Shneibler Isles"
+		caption="An edgier place than the mainland. A strong society, but law of the jungle rules above all else here."
 		fill="#009245" 
         d="M276.183,532.438c-0.57,0-1.119-0.058-1.63-0.17c-0.559-0.121-1.093-0.312-1.609-0.496
             c-0.56-0.199-1.087-0.389-1.635-0.491c-0.355-0.067-0.717-0.101-1.107-0.101c-1.154,0-2.309,0.288-3.531,0.594
@@ -900,6 +990,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Tony's Trading Outpost"
 		faction="Shneibler Isles"
+		caption="Shneibler Isles' very own Walmart. We've been paid to say that it is not a sweatshop, and the workers love the working conditions."
 		fill="#009245" 
         d="M300.128,503.621c-2.158,0-4.358-1.064-6.3-2.004c-0.325-0.157-0.644-0.312-0.95-0.454
             c-1.067-0.498-2.185-1.057-3.091-1.909c-1.949-1.828-2.59-4.603-3.104-6.832l-0.137-0.593l7.938-0.259
@@ -927,6 +1018,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Danny's Fishing Outpost"
 		faction="Shneibler Isles"
+        caption="The friendliest place in Big World. Everyone stays to fish, drink, read, laugh, and eat."
 		fill="#009245" 
         d="M338.669,519.87c-0.405-0.028-0.816-0.092-1.158-0.375c-0.372-0.301-0.495-0.751-0.595-1.112l-1.03-4.07
             c-0.384-1.484-0.819-3.17-0.756-4.871l0.013-0.339l2.93-1.054c0.65-0.228,1.293-0.453,1.988-0.507c0.1-0.007,0.195-0.01,0.294-0.01
@@ -950,6 +1042,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Isle of Knawlhorn"
 		faction="Shneibler Isles"
+		caption="Many travel from far away to study here. Home to the largest library in Big World, built on archaological and historical lands."
 		fill="#009245" 
         d="M409.39,477.03c-0.192,0-0.385-0.005-0.577-0.011c-3.68-0.117-6.385-0.957-8.268-2.569
             c-1.38-1.176-2.307-2.74-3.202-4.252c-0.249-0.421-0.498-0.842-0.757-1.253c-2.296-3.64-5.405-6.209-9.241-7.637
@@ -987,7 +1080,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Prifddinas"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="A cold, bustling city hidden between the snowy mountains, the 3rd most populous region in Maharnegonia."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M145.67,107.72c-3.36,0.8-6.55,2.34-9.26,4.48
@@ -1009,9 +1103,10 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Maer"
+        region="Araluen"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="A radiant realm of glowing flora, misty mountains, and cascading waterfalls with a crystalline castle as its centerpiece. It is home to many mythical creatures."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M165.71,164.82c0.33,0.77,0.18,1.63-0.1,2.44
@@ -1041,6 +1136,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Shneibler Mainland"
 		faction="Shneibler Isles"
+        caption="Immaculate weather and diverse well-traveled denizens - the mainland is a common stopping point for retired adventurers."
 		fill="#009245" 
         d="M332.88,657.072c-1.665,0-3.297-0.247-4.85-0.735l-0.277-0.086l-0.062-0.284
             c-0.594-2.718,1.583-5.003,2.547-5.86c0.607-0.533,1.261-1.014,1.894-1.479c1.036-0.763,2.016-1.483,2.809-2.412
@@ -1132,7 +1228,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Steps"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="Only eskimos and yetis find this place comforting enough to call home."
+		fill="#8B0000" 
         d="M220.397,59.41c-0.158,0.42-0.321,0.871-0.213,1.306c0.143,0.577,0.738,0.95,1.327,1.022
             s1.18-0.095,1.75-0.259c2.236-0.646,4.472-1.291,6.708-1.937c0.436-0.126,0.902-0.272,1.18-0.631
             c0.518-0.671,0.103-1.633-0.321-2.367c-1.193-2.066-2.386-4.132-3.579-6.198c-0.599-1.038-2.054-5.123-3.596-4.11
@@ -1142,7 +1239,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Steps"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="Only eskimos and yetis find this place comforting enough to call home."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M230.254,41.311c0.039,0.648,0.376,1.236,0.704,1.797
@@ -1154,7 +1252,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Steps"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="Only eskimos and yetis find this place comforting enough to call home."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M236.44,58.688c-0.003,0.746-0.429,1.413-0.755,2.084
@@ -1166,7 +1265,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Steps"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="Only eskimos and yetis find this place comforting enough to call home."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M248.951,45.155c-0.294-0.546-0.513-1.374,0.036-1.662
@@ -1179,7 +1279,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Steps"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="Only eskimos and yetis find this place comforting enough to call home."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M261.072,42.054c-0.166-1.104-0.185-2.278,0.295-3.286
@@ -1190,7 +1291,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Northreach"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="Most people who reside in these parts came due to necessity and not for their sheer love of cold."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M150.05,97.85c-0.78-0.8-2.15-0.11-2.89,0.72
@@ -1228,7 +1330,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Whitefang"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="A solitary community perennially enduring the harshest of winters and taming the snow beasts that live amongst them. Home of Johan."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M225.43,70.9c-0.15,1.45-0.35,2.89-0.62,4.32
@@ -1263,7 +1366,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Aelysium"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="TBD"
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M104.53,142.86v7.78c0,0.57,0,1.16-0.22,1.68
@@ -1286,7 +1390,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Canisgard"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="A cozy tight-knit community where humans are a minority race. Lovers of taverns and table games, since the weather doesn't allow for much else. Home of Kat."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M206.71,97.52v0.01c-0.85,1.99-0.97,4.58-2.45,6.23
@@ -1310,7 +1415,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Ashor"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="A cold sea port that serves as a connection for trade and communications between Maharnegonia and Zazuland."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M189.13,174.44c-0.82,2.35-1.71,4.8-3.54,6.5
@@ -1332,7 +1438,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Shroomwood Forest"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="The creatures that call this home are inviting and kind, but the same cannot be said for the forest itself. Home of Shroomies."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M170.17,214.75c-4.7-0.51-9.66,1.56-12.49,5.36
@@ -1362,9 +1469,10 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Araluen"
+        region="Maer"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="The vampires, mages, sorcerers, lurkers, and beasts of Maharnegonia tend to trace their roots here. It is said that Evo can be found in these parts."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M103.49,218.46c-1.07,1.78-1.99,3.65-2.74,5.59
@@ -1385,7 +1493,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Roruna"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="The second most populous city in Big World, it serves as an innovation powerhouse of Maharnegonia and Big World at large."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M121.54,247.92c-0.51,0.81-1.02,1.62-1.54,2.42
@@ -1412,9 +1521,10 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Wildlands"
+        region="Tony's Eighth Base"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+		caption="This neither confirms nor denies bases 1 through 7... or bases beyond 8."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M72.72,297.75c-1.81-0.11-3.68,0.32-5.29,1.19
@@ -1428,9 +1538,10 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Tony's Eighth Base"
+        region="Pleebletopia"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="Home to gnomes, dragons, and talking animals, mortgaged mushroom houses dot the land as enchanted coffee and floating to-do lists spur the economy of this lively mythical realm."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M179.09,237.67c-0.25,0.46-0.68,0.85-1.17,1.11
@@ -1447,7 +1558,8 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Nosaer"
 		faction="Maharnegonia"
-		fill="#ED1C24" 
+        caption="The capital of Maharnegonia, an important bastion located between ocean, river, and mountain."
+		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
         d="M82.34,307.91c-0.13,0.15-0.3,0.24-0.47,0.33
@@ -1471,6 +1583,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Tip"
 		faction="Zazuland"
+		caption="Steep cliffs and sharp inclines make it unsuitable living conditions for most except hunters and explorers."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1491,6 +1604,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Valor Cliffs"
 		faction="Zazuland"
+		caption="Home to those without a fear of heights and an appreciation for the ocean's beauty."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1518,8 +1632,9 @@
         </path>
         
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Lowlands"
+        region="Highlands"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1551,6 +1666,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Merchant's Lane"
 		faction="Zazuland"
+        caption="Where the pirates of Shneibler Isles come to haggle and drink with the nobleman and merchants of Zazuland."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1572,6 +1688,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Meronos"
 		faction="Zazuland"
+		caption="Nalkua's humble neighbors across the river. Most here live a simple life dedicated to agriculture and providing goods to Nalkua & the capital."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1595,6 +1712,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Royal Bay"
 		faction="Zazuland"
+		caption="Keeps of royalty and nobles along the coast. Everyone parks their boats here en route to the capital."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1616,6 +1734,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Kingsroad"
 		faction="Zazuland"
+		caption="When the rent's too high in Zazulia, you move here to the outskirts. The taverns are better out here anyway."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1637,6 +1756,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Zazulania"
 		faction="Zazuland"
+		caption="The great capital of Big World and home of the King. Most populous city in all of Big World."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1659,6 +1779,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Nalkua"
 		faction="Zazuland"
+        caption="Known as the city of chess and commerce, its strategic location on the river has made it a bustling economic powerhouse and home of Zazuland's university."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1698,6 +1819,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Even Newer Jersey"
 		faction="Zazuland"
+		caption="The glittering facade of this city masks the crime, corruption, and creatures of the Underworld that pervade it."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1731,6 +1853,7 @@
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Zalvaris"
 		faction="Zazuland"
+		caption="TBD"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1755,13 +1878,13 @@
 <style>
 /* CSS styles for your SVG */
 path:hover {
-    fill: purple; /* Example hover effect */
+    fill: #6A5ACD; /* Example hover effect */
 }
 
 .hover-box {
     position: fixed;
     pointer-events: none; /* Ensures the text doesn't interfere with mouse events */
     transform: translate(15px, 15px); /* Offset the text slightly from the cursor */
-    padding: 3vh;
+    /* padding: 3vh; */
 }
 </style>
