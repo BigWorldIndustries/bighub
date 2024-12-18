@@ -3,6 +3,7 @@ import { api, handlersForActions, updateStore, writableWithCache, type Actions, 
 import { doc, getDoc, getFirestore, onSnapshot, Timestamp } from "firebase/firestore";
 import { db } from "$lib/client/firebase/firebase.client";
 import { PUBLIC_ELECTION_ID } from "$env/static/public";
+import type { ConicStop } from "@skeletonlabs/skeleton";
 
 interface VoteStore extends Store {
     electionData: ElectionData;
@@ -12,7 +13,21 @@ interface VoteStore extends Store {
 export interface ElectionData {
     simvotes: SimVotes,
     sim_timestamp: string,
-    regions: string[]
+    regions: string[],
+    sim_conics: SimConics,
+    sim_percents: SimPercents
+}
+
+export interface SimConics {
+    [region: string]: ConicStop[]
+}
+
+export interface SimPercents {
+    [region: string]: CandidatePercents
+}
+
+export interface CandidatePercents {
+    [candidate: string]: number
 }
 
 export interface SimVotes {

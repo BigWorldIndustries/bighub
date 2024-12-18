@@ -1,11 +1,22 @@
 <script lang="ts">
     import { ConicGradient, type ConicStop } from "@skeletonlabs/skeleton";
     import { voteStore } from '../../stores/voteStore';
+    import { onMount } from "svelte";
 
     let mouseX = 0;
     let mouseY = 0;
     let hoveredRegion: Region | undefined = undefined;
     let regions: Regions = {};
+
+    let regionConicStops: RegionConicStops = {}
+
+    // Dimensions of the hover box
+    const hoverBoxWidth = 350; // Width in pixels
+    const hoverBoxHeight = 700; // Adjust as needed
+
+    interface RegionConicStops {
+        [region: string]: ConicStop[]
+    }
 
     interface Region {
         name: string;
@@ -54,6 +65,32 @@
             { label: 'BigDaddy', color: 'blue', start: 40, end: 100 }
     ];
 
+	voteStore.subscribe(store => {
+        // //console.log(store);
+		// let simVotes = store.electionData.simvotes;
+		// // sum up all total votes across all candidates
+		// totalVotes = Object.values(simVotes).reduce((sum, candidateVotes) => {
+		// 	// Ensure 'total' exists in the VoteData, then add its value
+		// 	return sum + (candidateVotes['total'] || 0);
+		// }, 0);
+
+		// for (const [candidate, candidateVotes] of Object.entries(simVotes)) {
+        //     for (const [region, votes] of Object.entries(candidateVotes)) {
+
+        //         (regionConicStops[region] = regionConicStops[region] || []).push();
+        //     }
+		// 	const candidateTotal = candidateVotes['total'] || 0;
+		// 	votePercent[candidate] = totalVotes > 0 
+		// 		? (candidateTotal / totalVotes) * 100 
+		// 		: 0; // Avoid division by zero
+    	// }
+
+		// // Sort simVotes by total votes in descending order
+		// sortedSimVotes = Object.fromEntries(
+		// 	Object.entries(simVotes).sort(([, a], [, b]) => (b['total'] || 0) - (a['total'] || 0))
+		// );
+    });
+
     function handleMouseover(event: MouseEvent) {
         const element = event.currentTarget as SVGElement;
         const name = element.getAttribute('region') ?? '';
@@ -71,7 +108,7 @@
             regions[name] = hoveredRegion;
         }
 
-        console.log(hoveredRegion.imgSrc)
+        //console.log(hoveredRegion.imgSrc)
     }
 
     function resetHoverTarget(event: MouseEvent) {
@@ -83,10 +120,34 @@
         mouseY = event.clientY;
         //console.log(`mouse pos: ${mouseX},${mouseY}`)
     }
+
+    function updateMousePosition(event: any) {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Calculate X position
+        mouseX = event.clientX + hoverBoxWidth > viewportWidth 
+        ? event.clientX - hoverBoxWidth 
+        : event.clientX;
+
+        // Calculate Y position
+        mouseY = event.clientY + hoverBoxHeight > viewportHeight
+        ? Math.max(200, event.clientY - hoverBoxHeight)
+        : event.clientY;
+
+        //console.log(`${mouseY} / ${viewportHeight}`);
+  }
+
+    onMount(() => {
+        window.addEventListener("mousemove", updateMousePosition);
+        return () => {
+        window.removeEventListener("mousemove", updateMousePosition);
+        };
+    });
 </script>
 
 <!-- Text element that follows the mouse -->
-
+    <div class="">
     <div class="card w-80 hover-box" style="left: {mouseX}px; top: {mouseY}px;" hidden={!hoveredRegion}>
         {#each Object.entries(regions) as [key, r]}
             <img src={r.imgSrc} alt={r.name} class="" hidden={r.name != hoveredRegion?.name} />
@@ -98,23 +159,25 @@
             </div>
             <div class="text-sm opacity-70">{hoveredRegion?.caption}</div>
         </div>
-        <!-- <hr /> -->
         <footer class="p-4 border-t border-surface-300-600-token">
             <div class="flex justify-between">
-                {#each mockdata.stats as item}
+                {#each Object.entries($voteStore.electionData.simvotes) as [key, value]}
                     <div class="">
-                        <div class="text-sm opacity-70">{item.title}</div>
-                        <b>{item.value}</b>
+                        <div class="text-sm opacity-70">{key}</div>
+                        <b>{Math.round(value[hoveredRegion?.name ?? 'total'])}</b>
                     </div>
                 {/each}
             </div>
             <br/>
-            <ConicGradient style="left: {mouseX}px; top: {mouseY}px;" stops={conicStops} legend></ConicGradient>
+            {#if hoveredRegion?.name && hoveredRegion?.name in $voteStore.electionData.sim_conics}
+                <ConicGradient style="left: {mouseX}px; top: {mouseY}px;" stops={$voteStore.electionData.sim_conics[hoveredRegion.name]} legend></ConicGradient>
+            {/if}
         </footer>
+    </div>
     </div>
 
 <svg version="1.1" d="Layer_3" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 468 792" xml:space="preserve" on:mousemove={handleMousemove}>
+	 viewBox="0 0 468 792" height={"90vh"} xml:space="preserve" on:mousemove={handleMousemove}>
     <g id="prefectures">
         <path on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget}
         region="Dinglebop Plains"
@@ -1886,5 +1949,9 @@ path:hover {
     pointer-events: none; /* Ensures the text doesn't interfere with mouse events */
     transform: translate(15px, 15px); /* Offset the text slightly from the cursor */
     /* padding: 3vh; */
+}
+
+.padded {
+    padding: 3vh;
 }
 </style>

@@ -14,3 +14,27 @@ body {
 	src: url('/fonts/Quicksand.ttf');
 	font-display: swap;
 }
+
+.gradient-heading-bigdaddy {
+	@apply bg-clip-text text-transparent box-decoration-clone;
+	/* Direction */
+	@apply bg-gradient-to-br;
+	/* Color Stops */
+	@apply from-primary-500 via-secondary-500 to-warning-500;
+}
+
+.gradient-heading-tony {
+	@apply bg-clip-text text-transparent box-decoration-clone;
+	/* Direction */
+	@apply bg-gradient-to-br;
+	/* Color Stops */
+	@apply from-error-500 via-warning-500 to-secondary-500;;
+}
+
+.gradient-heading-thenightpatrol {
+	@apply bg-clip-text text-transparent box-decoration-clone;
+	/* Direction */
+	@apply bg-gradient-to-br;
+	/* Color Stops */
+	@apply from-warning-500 via-tertiary-500 to-secondary-500;
+}
