@@ -6,6 +6,7 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth, setPersistence, inMemoryPersistence } from "firebase/auth";
 import { env } from '$env/dynamic/public';
 import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -34,3 +35,4 @@ else {
 
 export const auth = getAuth(firebaseApp);
 export const storage = getStorage(firebaseApp);
+export const db = getFirestore(firebaseApp);
