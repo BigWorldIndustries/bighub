@@ -8,6 +8,9 @@ import type { ConicStop } from "@skeletonlabs/skeleton";
 interface VoteStore extends Store {
     electionData: ElectionData;
     offset: number;
+    regionInfo: Regions,
+    hoveredRegion: Region | null,
+    regionImgUrls: RegionImgUrls
 }
 
 export interface ElectionData {
@@ -16,6 +19,21 @@ export interface ElectionData {
     regions: string[],
     sim_conics: SimConics,
     sim_percents: SimPercents
+}
+
+export interface RegionImgUrls {
+    [region: string]: string
+}
+
+export interface Region {
+    name: string;
+    faction: string;
+    imgSrc: string;
+    caption: string;
+}
+
+export interface Regions {
+    [region: string]: Region
 }
 
 export interface SimConics {
@@ -42,7 +60,16 @@ export const voteStore = writableWithCache<VoteStore>("voteStore", {
     lastAction: null,
     lastActionSuccess: null,
     errorMessage: null,
-    electionData: { simvotes: {}, sim_timestamp: "", regions: [] },
+    electionData: { 
+        simvotes: {}, 
+        sim_timestamp: "", 
+        regions: [], 
+        sim_conics: {}, 
+        sim_percents: {}
+    },
+    regionInfo: {},
+    hoveredRegion: null,
+    regionImgUrls: {},
     offset: 55
 });
 
@@ -75,8 +102,16 @@ const actions: Actions<VoteStore> = {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             var data = docSnap.data() as ElectionData;
+
+            // pre-load image urls
+            const regionImages: { [r: string]: string } = {};
+            data.regions.forEach(region => {
+                regionImages[region] = "/images/" + region.toLowerCase().replace(/\s/g, "_").replace("'", "") + ".jpg";
+            });
+
             return { 
                 electionData: data,
+                regionImgUrls: regionImages,
                 offset: data.sim_timestamp != currentStore.electionData.sim_timestamp ? 0 : currentStore.offset
             };
         }
@@ -87,6 +122,31 @@ const actions: Actions<VoteStore> = {
 
     incrementOffset: async (currentStore: VoteStore) => {
         return { offset: currentStore.offset + Math.floor(Math.random() * 10) };
+    },
+
+    selectRegion: async (currentStore: VoteStore, element: SVGElement) => {
+        let region: Region | undefined = undefined;
+        let latest_region_info = currentStore.regionInfo;
+        
+        const regionName = element.getAttribute('region') ?? '';
+        if (latest_region_info[regionName]) {
+            region = latest_region_info[regionName];
+        }
+        else {
+            region = {
+                name: element.getAttribute('region') ?? '',
+                faction: element.getAttribute('faction') ?? '',
+                caption: element.getAttribute('caption') ?? '',
+                imgSrc: "/images/" + (element.getAttribute('region') as string)?.toLowerCase()?.replace(/\s/g, "_").replace("'", "") + ".jpg"
+            }
+            latest_region_info[regionName] = region;
+        }
+
+        return { region_info: latest_region_info, hoveredRegion: region };
+    },
+
+    unselectRegion: async (currentStore: VoteStore) => {
+        return { hoveredRegion: null }
     }
 }
 

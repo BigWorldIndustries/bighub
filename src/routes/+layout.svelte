@@ -1,16 +1,23 @@
 <script lang="ts">
 	import '../app.postcss';
-	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { AppShell, AppBar, initializeStores, Modal, type ModalComponent } from '@skeletonlabs/skeleton';
 	import { IconBrandDiscordFilled } from '@tabler/icons-svelte';
 	import { IconBrandGithub } from '@tabler/icons-svelte';
 	import { IconFlameFilled } from '@tabler/icons-svelte';
 	import { IconBrandTwitch } from '@tabler/icons-svelte';
 	import { onMount, onDestroy } from "svelte"; 
+	import FullscreenModal from '$lib/components/modals/FullscreenModal.svelte';
 
 	// Floating UI for Popups
 	import { computePosition, autoUpdate, flip, shift, offset, arrow } from '@floating-ui/dom';
 	import { storePopup } from '@skeletonlabs/skeleton';
 	storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
+
+	initializeStores();
+
+	const modalComponentRegistry: Record<string, ModalComponent> = {
+		fullScreen: { ref: FullscreenModal }
+	};
 
 	let windowWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
 	$: widescreen = typeof window == 'undefined' || windowWidth > 700;
@@ -31,6 +38,12 @@
 		}
 	});
 </script>
+
+<Modal components={modalComponentRegistry} />
+
+<svelte:head>
+    <title>BigHub</title>
+</svelte:head>
 
 <!-- App Shell -->
 <AppShell>

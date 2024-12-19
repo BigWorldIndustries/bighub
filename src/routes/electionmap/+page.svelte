@@ -15,6 +15,9 @@
 		[candidate: string]: string
 	}
 
+	let windowWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+	$: widescreen = typeof window == 'undefined' || windowWidth > 700;
+
 	let language = 'en';
 	let container: any, svg, colorfulSvg, tooltipSvg, tooltip: HTMLSpanElement | null;
 	$: tooltip = null;
@@ -71,7 +74,7 @@
 	];
 
 	voteStore.subscribe(store => {
-        //console.log(store);
+        console.log(store);
 		let simVotes = store.electionData.simvotes;
 		// sum up all total votes across all candidates
 		totalVotes = Object.values(simVotes).reduce((sum, candidateVotes) => {
@@ -98,7 +101,7 @@
 		console.log($voteStore.electionData);
 		await voteStoreHandlers.getElectionData();
 
-		// Start incrementing the offset every second
+		//Start incrementing the offset every second
 		intervalId = setInterval(() => {
 			voteStoreHandlers.incrementOffset();
 		}, 1000);
@@ -143,36 +146,46 @@
 	</div> -->
 
 	<div class="grid grid-cols-1 md:grid-cols-2">
-		<div class="">
+		<div class="card leaderboard">
 		{#each Object.entries(sortedSimVotes) as [key, value], index}
 			{#if index==0}
 				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase()}>
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
-						<h1 class={`text-4xl mb-0 animate-bounce`}>
+						<h1 class={`text-3l mb-0 animate-bounce`}>
 							#{index+1} {key}
 						</h1>
 						
-						<h3 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h3>
+						<h2 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h2>
 					</div>
 				</div>
 			{:else}
 				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase()}>
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
-						<h1 class={`text-4xl mb-0`}>
+						<h1 class={`text-3l mb-0`}>
 							#{index+1} {key}
 						</h1>
 						
-						<h3 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h3>
+						<h2 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h2>
 					</div>
 				</div>
 			{/if}
 		{/each}
 
 		<span class={`text-4xs mb-0 opacity-50 tabbed`}>{daysUntil} days remaining</span>
+		<br />
 		</div>
+		{#if !widescreen}
+			<br />
+		{/if}
 		<div id="mainContainer" class="flex gap-4 flex-col relative mapcontainer">
+			<h1 class={`text-4xs tabbed centered`}>LIVE ELECTION MAP</h1>
+			{#if widescreen}
+				<span class={`text-3xs opacity-75 tabbed centered`}>Hover over a region for stats</span>
+			{:else}
+				<span class={`text-3xs opacity-75 tabbed centered`}>Click on a region for stats</span>
+			{/if}
 			<div class="flex justify-center" bind:this={container}><Prefectures /></div>
 		</div>
 	</div>
@@ -208,6 +221,12 @@
 		max-width: fit-content;
 	}
 
+	.leaderboard {
+		height: fit-content;
+		margin-left: 1vh;
+		margin-right: 1vh;
+	}
+
 	.withspace {
 		margin: 20px;
 	}
@@ -219,7 +238,6 @@
 	.centered {
 		margin: auto;
 		width: 50%;
-		padding: 10px;
 		text-align: center;
 		/* color: #00FFFF; */
 	}
