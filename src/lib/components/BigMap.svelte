@@ -173,6 +173,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget}
         region="Dinglebop Plains"
 		faction="Zazuland"
+		caption="A sprawling sea of golden grass, dotted with odd, wobbling trees and sparkling streams, where the wind carries a playful tune and mischief is never far behind."
 		fill="#29ABE2"
         stroke="white" 
         stroke-miterlimit="10" 
@@ -212,9 +213,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Zenith"
+        region="Paradox Cliffs"
 		faction="Zazuland"
-		caption="TBD"
+		caption="Home of mystics and the otherworldy, these staggering peaks in the clouds of Zazuland warp the laws of nature and beckon visitors to question what they thought was real."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -239,7 +240,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Big Town"
 		faction="Zazuland"
-		caption="TBD"
+		caption="Bustling hub of chaos and charm, where crooked streets, towering markets, and clashing cultures collide. It’s loud, lively, and always awake—because in Big Town, the drama never sleeps."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -284,9 +285,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Kyrenis"
+        region="Lumbo"
 		faction="Zazuland"
-		caption="TBD"
+		caption="Coastal woods, where towering yellow and black trees meet rugged shores. This is where the King sources his wood for government projects."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -314,7 +315,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Tone-a-Lago"
 		faction="Zazuland"
-		caption="A majestic golf retreat owned by Tony with golden fairways, lush hills, and a castle-like clubhouse."
+		caption="Beautiful lands flanked by ocean and lake. Home to a majestic golf retreat owned by Tony with golden fairways, lush hills, and a castle-like clubhouse."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -336,8 +337,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Paradox Cliffs"
+        region="Stellar Reach"
 		faction="Zazuland"
+		caption="Where sea and sky meet, its towering waves glow with ethereal light. Myths say it’s a boundary to the divine, where strange lights pulse beneath the waves like a celestial heartbeat."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -355,9 +357,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Stellar Reach"
+        region="Wraith-Smith Forge"
 		faction="Zazuland"
-		caption="Where sea and sky meet, its towering waves glow with ethereal light. Myths say it’s a boundary to the divine, where strange lights pulse beneath the waves like a celestial heartbeat."
+		caption="Hidden in the mountains of Zazuland, it is home to a secret faction of necromancers."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -452,9 +454,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Galizea"
+        region="Krungle"
 		faction="Zazuland"
-		caption="TBD"
+		caption="The ghetto slums of Big World - the impoverished people here live in filth and rundown homes. The King is not popular here, as he has largely ignored the problem."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -489,9 +491,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Kalos"
+        region="Galizea"
 		faction="Zazuland"
-		caption="TBD"
+		caption="A lush, rolling countryside famed for its vibrant markets, picturesque villages, and its legendary sausage—so good, it’s said wars have nearly broken out over the last link!"
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -536,6 +538,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Scora"
 		faction="Zazuland"
+		caption="A serene valley dotted with quiet hamlets, where fertile fields and winding rivers rest under the shadow of distant peaks, and life moves to the rhythm of the land."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -572,9 +575,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Wraith-Smith Forge"
+        region="Smuggler's Pass"
 		faction="Zazuland"
-		caption="Hidden in the mountains of Zazuland, it is home to a secret faction of necromancers."
+		caption="Winding paths and rickety bridges over the mountain facilitate crime and illegal border crossings into Zazuland. Rumor has it the King himself has ordained the crossings to strengthen his claim to the throne."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -588,9 +591,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Mahoney Mountain Pass"
+        region="Monjarnhoe"
 		faction="Zazuland"
-        caption="Home to the Mahoney Ministry, serves as a passage through the mountains that divide Zazuland and Maharnegonia."
+        caption="Sitting atop the mountains of Zazuland, the lush peaks and flowing waterfalls of these lands contribute to its ethereal dream-like nature."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -614,6 +617,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Lake Zibbler"
 		faction="Zazuland"
+		caption="A beautiful yet mysterious lake that is a hotspot for anamolous cryptid sightings, whether that is UFOs from above or Lochness Monster and Mantis Man from below."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -632,9 +636,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Monjarnhoe"
+        region="Mahoney Mountain Pass"
 		faction="Zazuland"
-		caption="Serves as a fortified northern gateway to the civilized lands of Zazuland, or a southern gateway to the unknown."
+		caption="Home to a devout religious clan, the Mahoney Ministry, these lands serve as a passage through the mountains that divide civilized Zazuland from the northern wildlands."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -661,7 +665,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Mount Twilight"
 		faction="Zazuland"
-		caption="The last stop in civilization for those making the Great Climb."
+		caption="A military fortress that has evolved into a community, it serves as a sentry to Maharnegonian invaders from the west. But oddly, these days it seems the guards turn a blind eye."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -780,7 +784,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Teras"
 		faction="Zazuland"
-		caption="There is a lot of history in the old fiefs of this land. The people are hardworking and honorable."
+		caption="Dotted with old castles and fortified towns, these lands are filled with history from the historical era. The people are hardworking, honorable, and faithful to their roots."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -938,9 +942,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Raven's Haven (avoid)"
+        region="Sakramento"
 		faction="Shneibler Isles"
-		caption="TBD"
+		caption="A surreal mix of floating islands and dizzying cliffs, legends say this is the origin of Big World's alien species, whose ancestors crash landed here many moons ago."
 		fill="#009245" 
         d="M384.408,692.59c-0.353,0-1.091,0-1.526-0.533c-0.502-0.63-0.229-1.446-0.066-1.935
             c0.669-2.043,0.51-4.302,0.355-6.485c-0.037-0.522-0.073-1.043-0.1-1.562c-0.131-2.393-0.052-5.844,2.135-8.168
@@ -978,7 +982,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Adventurer's Gateway"
 		faction="Shneibler Isles"
-		caption="TBD"
+		caption="A lively crossroads of inns, markets, and mapmakers, where every path begins and every tale grows taller with each round of ale. It’s the perfect place to start—or lose—an epic quest."
 		fill="#009245" 
         d="M410.378,603.479c-1.088,0-3.762-4.1-3.782-4.141c-0.881-1.7-1.3-3.605-1.246-5.661
             c0.065-2.265,0.661-4.572,1.237-6.804c0.323-1.252,0.657-2.546,0.881-3.783c0.175-0.984,0.414-1.998,1.239-2.596
@@ -1070,9 +1074,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Danny's Fishing Outpost"
+        region="Danny's Fishing Village"
 		faction="Shneibler Isles"
-        caption="The friendliest place in Big World. Everyone stays to fish, drink, read, laugh, and eat."
+        caption="The friendliest place in Big World. Everyone stays to fish, drink, read, eat, and laugh. The serene island offers beautiful views of the mainland since it's only a stone's throw away."
 		fill="#009245" 
         d="M338.669,519.87c-0.405-0.028-0.816-0.092-1.158-0.375c-0.372-0.301-0.495-0.751-0.595-1.112l-1.03-4.07
             c-0.384-1.484-0.819-3.17-0.756-4.871l0.013-0.339l2.93-1.054c0.65-0.228,1.293-0.453,1.988-0.507c0.1-0.007,0.195-0.01,0.294-0.01
@@ -1157,7 +1161,7 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Araluen"
+        region="Aelysium"
 		faction="Maharnegonia"
 		caption="A radiant realm of glowing flora, misty mountains, and cascading waterfalls with a crystalline castle as its centerpiece. It is home to many mythical creatures."
 		fill="#8B0000" 
@@ -1284,6 +1288,7 @@
 		faction="Maharnegonia"
         caption="Only eskimos and yetis find this place comforting enough to call home."
 		fill="#8B0000" 
+        stroke="white"
         d="M220.397,59.41c-0.158,0.42-0.321,0.871-0.213,1.306c0.143,0.577,0.738,0.95,1.327,1.022
             s1.18-0.095,1.75-0.259c2.236-0.646,4.472-1.291,6.708-1.937c0.436-0.126,0.902-0.272,1.18-0.631
             c0.518-0.671,0.103-1.633-0.321-2.367c-1.193-2.066-2.386-4.132-3.579-6.198c-0.599-1.038-2.054-5.123-3.596-4.11
@@ -1418,9 +1423,9 @@
         </path>
         
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
-        region="Aelysium"
+        region="Araluen"
 		faction="Maharnegonia"
-		caption="TBD"
+		caption="The oldest city in Maharnegonia, it stands strong as a prideful symbol of the people's perserverence to build society and survive in these harsh mythical lands."
 		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1525,7 +1530,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Maer"
 		faction="Maharnegonia"
-		caption="The vampires, mages, sorcerers, lurkers, and beasts of Maharnegonia tend to trace their roots here. It is said that Evo can be found in these parts."
+		caption="Chaotic twisting landscapes and a perpetual looming fog. Many mythical beasts, vampires, sorcerers, and lurkers of Maharnegonia trace their roots here. Home of Evo."
 		fill="#8B0000" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1637,7 +1642,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="The Tip"
 		faction="Zazuland"
-		caption="Steep cliffs and sharp inclines make it unsuitable living conditions for most except hunters and explorers."
+		caption="Rugged cliffs and glowing tide pools amaze, but its sheer girth and wild waves are too much for some to handle."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1688,7 +1693,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Highlands"
 		faction="Zazuland"
-		caption="TBD"
+		caption="A vast, windswept expanse of rolling hills and towering peaks, where ancient stone circles stand under ever-changing skies, and the air hums with untamed magic."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1851,6 +1856,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Twisted Forest"
 		faction="Zazuland"
+		caption="A shadowy marshland of twisting waterways and creeping fog, where moss-draped trees loom over silent villages. It’s said the swamp keeps its secrets—and those who pry too deeply."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1894,6 +1900,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="BigDaddy's Beachfront Property"
 		faction="Zazuland"
+		caption="A stretch of pristine sands and lazy waves, where the drinks are always cold, the sunsets are always perfect, and the name is as questionable as the locals’ tall tales."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 
@@ -1907,7 +1914,7 @@
         <path on:mousedown={handleMouseover} on:mouseover={handleMouseover} on:mouseleave={resetHoverTarget} 
         region="Zalvaris"
 		faction="Zazuland"
-		caption="TBD"
+		caption="A gleaming coastal desert expanse, where golden sands meet shimmering oases and ancient ruins rise from the dunes. Its wealth lies in its spice trade—and its ability to scorch unprepared travelers."
 		fill="#29ABE2" 
         stroke="white" 
         stroke-miterlimit="10" 

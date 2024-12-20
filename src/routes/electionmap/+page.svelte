@@ -74,7 +74,7 @@
 	];
 
 	voteStore.subscribe(store => {
-        console.log(store);
+        //console.log(store);
 		let simVotes = store.electionData.simvotes;
 		// sum up all total votes across all candidates
 		totalVotes = Object.values(simVotes).reduce((sum, candidateVotes) => {
