@@ -129,7 +129,8 @@ const actions: Actions<VoteStore> = {
         let latest_region_info = currentStore.regionInfo;
         
         const regionName = element.getAttribute('region') ?? '';
-        if (latest_region_info[regionName]) {
+        //if (latest_region_info[regionName]) {
+        if (false) {
             region = latest_region_info[regionName];
         }
         else {
