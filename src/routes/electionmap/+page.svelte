@@ -32,13 +32,16 @@
 	let prefectures: any[] = [];
 	let noOfPefectures = 47;
 
-	let endDate = new Date("2024-12-24"); // election end date
-	let daysUntil = 0; // Calculated number of days remaining
+	let endDate = new Date("2024-12-25"); // election end date
+	let hoursUntil = 0; 
+	let minutesUntil = 0;
+	let timeDifference = 0;
 
 	function calculateDaysUntil() {
 		const currentDate = new Date();
-		const timeDifference = endDate.valueOf() - currentDate.valueOf();
-		daysUntil = Math.ceil(timeDifference / (1000 * 60 * 60 * 24)); // Convert milliseconds to days
+		timeDifference = endDate.valueOf() - currentDate.valueOf();
+		hoursUntil = Math.ceil(timeDifference / (1000 * 60 * 60)) + 5; // Convert milliseconds to days
+		minutesUntil = Math.ceil(timeDifference / (1000 * 60)) + (5*60); // Convert milliseconds to days
   	}
 
 	let intervalId: NodeJS.Timeout;
@@ -101,10 +104,12 @@
 		console.log($voteStore.electionData);
 		await voteStoreHandlers.getElectionData();
 
-		//Start incrementing the offset every second
-		intervalId = setInterval(() => {
-			voteStoreHandlers.incrementOffset();
-		}, 1000);
+		//Start incrementing the offset every second as long as there is time remaining
+		if (timeDifference > 0) {
+			intervalId = setInterval(() => {
+				voteStoreHandlers.incrementOffset();
+			}, 1000);
+		}
 	});
 
 	onDestroy(() => {
@@ -153,7 +158,7 @@
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
 						<h1 class={`text-3l mb-0 animate-bounce`}>
-							#{index+1} {key}
+							#{index+1} {key} {timeDifference < 0 ? '(President-Elect)' : ''}
 						</h1>
 						
 						<h2 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h2>
@@ -173,7 +178,15 @@
 			{/if}
 		{/each}
 
-		<span class={`text-4xs mb-0 opacity-50 tabbed`}>{daysUntil} days remaining</span>
+		{#if hoursUntil == 1}
+			<span class={`text-4xs mb-0 opacity-50 tabbed`}>1 hour remaining</span>
+		{:else if hoursUntil == 0}
+			<span class={`text-4xs mb-0 opacity-50 tabbed`}>{minutesUntil} minutes remaining</span>
+		{:else if hoursUntil > 1}
+			<span class={`text-4xs mb-0 opacity-50 tabbed`}>{hoursUntil} hours remaining</span>
+		{:else}
+			<span class={`text-4xs mb-0 opacity-50 tabbed`}>Election has concluded.</span>
+		{/if}
 		<br />
 		</div>
 		{#if !widescreen}
