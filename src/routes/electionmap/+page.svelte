@@ -105,7 +105,7 @@
 		await voteStoreHandlers.getElectionData();
 
 		//Start incrementing the offset every second as long as there is time remaining
-		if (timeDifference > 0) {
+		if (minutesUntil > 0) {
 			intervalId = setInterval(() => {
 				voteStoreHandlers.incrementOffset();
 			}, 1000);
@@ -158,7 +158,7 @@
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
 						<h1 class={`text-3l mb-0 animate-bounce`}>
-							#{index+1} {key} {timeDifference < 0 ? '(President-Elect)' : ''}
+							#{index+1} {key} {minutesUntil < 0 ? '(President-Elect)' : ''}
 						</h1>
 						
 						<h2 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h2>
