@@ -14,7 +14,9 @@
 	import { storePopup } from '@skeletonlabs/skeleton';
 	storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
 
+	injectAnalytics();
 	initializeStores();
+	
 
 	const modalComponentRegistry: Record<string, ModalComponent> = {
 		fullScreen: { ref: FullscreenModal }
