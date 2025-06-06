@@ -7,6 +7,7 @@
 	import { IconBrandTwitch } from '@tabler/icons-svelte';
 	import { onMount, onDestroy } from "svelte"; 
 	import FullscreenModal from '$lib/components/modals/FullscreenModal.svelte';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit'
 
 	// Floating UI for Popups
 	import { computePosition, autoUpdate, flip, shift, offset, arrow } from '@floating-ui/dom';
