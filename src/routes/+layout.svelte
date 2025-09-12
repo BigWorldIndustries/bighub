@@ -58,6 +58,12 @@
 				{#if widescreen}
 					<strong class="text-xl">BigHub</strong>
 				{/if}
+				<a href="/candidates" class="btn btn-sm variant-ghost-surface ml-4">
+					Candidates
+				</a>
+				<a href="/electionmap" class="btn btn-sm variant-ghost-surface">
+					Live Map
+				</a>
 			</svelte:fragment>
 			<svelte:fragment slot="trail">
 				<a
