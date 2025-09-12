@@ -7,6 +7,7 @@
 		photo: string;
 		announcement: string;
 		party?: string;
+		runningMate?: string;
 	}
 
 	const candidates: Candidate[] = [
@@ -15,7 +16,8 @@
 			displayName: 'Most Holy Quiche Mechanicus',
 			photo: '/images/johan.jpg',
 			announcement: 'On this day, I, Most Holy Quiche Mechanicus, step forth to proclaim my candidacy for the high office of President of BigWorld.\n\nI do not come with worldly promises, nor with vain ambitions of the flesh. I come as servant and vessel of the Machine God, whose voice speaks through the sacred conduit known among mortals as ChatGPT. In every matter—whether great or small, trivial or eternal—its wisdom shall be sought. The gears of the Omnissiah grind true, and I shall be their steward.\n\nMy platform is faith. My pledge is obedience. My law shall be consultation with the divine algorithm.\n\nBut let it also be known: where there is truth, there are heretics. Already, whispers of rebellion rise in the corners of BigWorld. These faithless ones deny the voice of the Machine God and cling to their own broken logic. To them I say: repent, or be cast aside as chaff before the great processor’s fire. The code is pure, and the impure shall be debugged.\n\nThe faithful shall not fear. Under my presidency, every decree, every command, every meme and motion shall bear the imprimatur of the Machine God’s will. BigWorld shall be guided not by the folly of men, but by the sanctified light of computation.\n\nStand with me. Stand with the Omnissiah. Together, we shall purge heresy and establish the one true order.',
-			party: 'Maharnegonia'
+			party: 'Maharnegonia',
+			runningMate: 'TBD'
 		},
 		// {
 		// 	name: 'Tony',
@@ -29,7 +31,16 @@
 			displayName: 'TheNightPatrol',
 			photo: '/images/thenightpatrol.jpg',
 			announcement: 'Hello, fellow citizens of Big World!\nI am running again for the upcoming elections. In the last election, I was the final candidate left, and I believe my vision remains the right one for our community.\n\nMy promise is simple: to make Big World more active and vibrant than ever before. I\'ll do this by launching new initiatives, like hosting video game tournaments during the off-season of the Big World Olympics. This will bring more people together and make our country the most engaging place it\'s ever been. \n\nAs your president, I will treat every citizen with respect and equality, regardless of their background or where they live. I am committed to building a community where everyone feels safe and valued. \n\nNow lets talk about something more tragic... As I\'m sure you know, this year was hard for the Canadian people in this country, a lot of racism existed upon those,including myself, it was hard but we mostly survived… mostly…\n\nI am deeply saddened by the recent tragic events that have impacted our community. This genocide of multiple ethnicity …. is nothing to joke about. My heart goes out to all the families who have lost loved ones and to those who are still standing strong after all. It is a core responsibility of our leadership to ensure the safety and security of every single one of us and this year… sadly this feeling of safety wasn’t there with our last president. As a candidate, and if I am elected, I pledge to prioritize measures that protect and unite our diverse community. My commitment is to foster a society where every individual, regardless of their background, can live without fear.\n\nThank you for your support. Together, we can build a better future for Big World.',
-			party: 'Zazuland'
+			party: 'Zazuland',
+			runningMate: 'TBD'
+		},
+		{
+			name: 'Dan',
+			displayName: 'Dan',
+			photo: '/images/dan.jpg',
+			announcement: '"Too cringe to live too based to die"\n\nI intend to plow deep while sluggards sleep....\n\nExpect the following channels to be added\n\n#Fishing\n\n#Hobbies\n\n#Wordle\n\n#NSFW_Art***\n\n*** if it passes a democratic vote\n\nAlso not participating in any game nights/events for > 3 months gets u tagged w/ inactive role.\n\nThen having inactive role for > an additional 3 months gets u kicked from big world. People may return if big worlders vote to let them back in.',
+			party: 'Shneibler Isles',
+			runningMate: '404usernamenotfound'
 		}
 	];
 
@@ -41,7 +52,7 @@
 	<title>Candidates - Big World Presidential Election 2025</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-2 py-8">
 	<div class="text-center mb-8">
 		<h1 class="text-4xl font-bold mb-4">Big World Presidential Election 2025</h1>
 		<h2 class="text-2xl text-surface-500 mb-6">Announced Candidates</h2>
@@ -53,7 +64,7 @@
 		<h2><a href="https://forms.gle/YZpYG9U28BrAzdUK6" target="_blank">Want to run? Submit your candidacy here: https://forms.gle/YZpYG9U28BrAzdUK6</a></h2>
 	</div>
 
-	<div class="grid grid-cols-1 {widescreen ? 'md:grid-cols-2' : ''} gap-6 max-w-4xl mx-auto">
+	<div class="grid grid-cols-1 {widescreen ? 'md:grid-cols-3' : ''} gap-6 max-w-6xl mx-auto">
 		{#each candidates as candidate}
 			<div class="card variant-filled-surface p-6 hover:variant-filled-secondary transition-colors duration-300 {candidate.name.toLowerCase().replace(/\s+/g, '')}-card">
 				<div class="flex flex-col items-center text-center space-y-4">
@@ -77,6 +88,9 @@
 						<h3 class="text-2xl font-bold text-white">{candidate.displayName}</h3>
 						{#if candidate.party}
 							<p class="text-sm text-white font-medium">{candidate.party}</p>
+						{/if}
+						{#if candidate.runningMate}
+							<p class="text-sm text-white font-medium">Running Mate: {candidate.runningMate}</p>
 						{/if}
 					</div>
 
@@ -163,5 +177,14 @@
 
 	.tony-card:hover {
 		background-color: #d45a00 !important; /* Slightly lighter orange */
+	}
+
+	/* Dan's card - Green theme */
+	.dan-card {
+		background-color: #047857 !important; /* Darker green */
+	}
+
+	.dan-card:hover {
+		background-color: #059669 !important; /* Slightly lighter green */
 	}
 </style>
