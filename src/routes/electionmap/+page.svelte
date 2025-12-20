@@ -78,7 +78,24 @@
 
 	voteStore.subscribe(store => {
         //console.log(store);
+		// Guard against null or undefined store or electionData
+		if (!store || !store.electionData) {
+			totalVotes = 0;
+			votePercent = {};
+			sortedSimVotes = {};
+			return;
+		}
+		
 		let simVotes = store.electionData.simvotes;
+		
+		// Guard against null or undefined simVotes
+		if (!simVotes) {
+			totalVotes = 0;
+			votePercent = {};
+			sortedSimVotes = {};
+			return;
+		}
+		
 		// sum up all total votes across all candidates
 		totalVotes = Object.values(simVotes).reduce((sum, candidateVotes) => {
 			// Ensure 'total' exists in the VoteData, then add its value
@@ -86,6 +103,8 @@
 		}, 0);
 
 		for (const [candidate, candidateVotes] of Object.entries(simVotes)) {
+			// Guard against null or undefined candidateVotes
+			if (!candidateVotes) continue;
 			const candidateTotal = candidateVotes['total'] || 0;
 			votePercent[candidate] = totalVotes > 0 
 				? (candidateTotal / totalVotes) * 100 
@@ -101,11 +120,16 @@
 	onMount(async () => {
 		calculateDaysUntil();
 
-		console.log($voteStore.electionData);
-		await voteStoreHandlers.getElectionData();
+		if ($voteStore?.electionData) {
+			console.log($voteStore.electionData);
+		}
+		
+		if (voteStoreHandlers?.getElectionData) {
+			await voteStoreHandlers.getElectionData();
+		}
 
 		//Start incrementing the offset every second as long as there is time remaining
-		if (minutesUntil > 0) {
+		if (minutesUntil > 0 && voteStoreHandlers?.incrementOffset) {
 			intervalId = setInterval(() => {
 				voteStoreHandlers.incrementOffset();
 			}, 1000);
@@ -114,7 +138,9 @@
 
 	onDestroy(() => {
 		// Clean up the interval
-		clearInterval(intervalId);
+		if (intervalId) {
+			clearInterval(intervalId);
+		}
 	});
 
 </script>
@@ -152,31 +178,39 @@
 
 	<div class="grid grid-cols-1 md:grid-cols-2">
 		<div class="card leaderboard">
-		{#each Object.entries(sortedSimVotes) as [key, value], index}
-			{#if index==0}
-				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase().replace(/\//g, '')}>
-					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
-					<div class="space-y-2">
-						<h1 class={`text-3l mb-0 animate-bounce`}>
-							#{index+1} {key} {minutesUntil < 0 ? '(President-Elect)' : ''}
-						</h1>
-						
-						<h2 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h2>
-					</div>
-				</div>
-			{:else}
-				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase().replace(/\//g, '')}>
-					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
-					<div class="space-y-2">
-						<h1 class={`text-3l mb-0`}>
-							#{index+1} {key}
-						</h1>
-						
-						<h2 class="animate-pulse font-display">{$voteStore.electionData.simvotes[key].total + $voteStore.offset} VOTES</h2>
-					</div>
-				</div>
-			{/if}
-		{/each}
+		{#if sortedSimVotes && Object.keys(sortedSimVotes).length > 0}
+			{#each Object.entries(sortedSimVotes) as [key, value], index}
+				{#if key && value}
+					{#if index==0}
+						<div class={"flex space-x-5 items-center card withspace " + (key ? key.toLowerCase().replace(/\//g, '') : '')}>
+							<Avatar src={"/images/"+(key ? key.toLowerCase() : '')+".jpg"} width="w-32" rounded="rounded-full" />
+							<div class="space-y-2">
+								<h1 class={`text-3l mb-0 animate-bounce`}>
+									#{index+1} {key || 'Unknown'} {minutesUntil < 0 ? '(President-Elect)' : ''}
+								</h1>
+								
+								<h2 class="animate-pulse font-display">
+									{($voteStore?.electionData?.simvotes?.[key]?.total ?? 0) + ($voteStore?.offset ?? 0)} VOTES
+								</h2>
+							</div>
+						</div>
+					{:else}
+						<div class={"flex space-x-5 items-center card withspace " + (key ? key.toLowerCase().replace(/\//g, '') : '')}>
+							<Avatar src={"/images/"+(key ? key.toLowerCase() : '')+".jpg"} width="w-32" rounded="rounded-full" />
+							<div class="space-y-2">
+								<h1 class={`text-3l mb-0`}>
+									#{index+1} {key || 'Unknown'}
+								</h1>
+								
+								<h2 class="animate-pulse font-display">
+									{($voteStore?.electionData?.simvotes?.[key]?.total ?? 0) + ($voteStore?.offset ?? 0)} VOTES
+								</h2>
+							</div>
+						</div>
+					{/if}
+				{/if}
+			{/each}
+		{/if}
 
 		{#if hoursUntil == 1}
 			<span class={`text-4xs mb-0 opacity-50 tabbed`}>1 hour remaining</span>
