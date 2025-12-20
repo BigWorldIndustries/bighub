@@ -25,14 +25,14 @@
 	$: sortedSimVotes = {};
 	let votePercent: VotePercent = {};
 	let candidateColor: CandidateColor = {
-		'BigDaddy': 'stroke-secondary-500',
-		'Tony': 'stroke-warning-500',
+		'Ally/Dan': 'stroke-secondary-500',
+		'Johan': 'stroke-warning-500',
 		'TheNightPatrol': 'stroke-tertiary-500'
 	};
 	let prefectures: any[] = [];
 	let noOfPefectures = 47;
 
-	let endDate = new Date("2024-12-25"); // election end date
+	let endDate = new Date("2025-12-25"); // election end date
 	let hoursUntil = 0; 
 	let minutesUntil = 0;
 	let timeDifference = 0;
@@ -54,14 +54,14 @@
 
 	const mockdata = [
 		{
-			label: 'BigDaddy',
+			label: 'Ally/Dan',
 			stats: '456,578',
 			progress: 65,
 			color: 'stroke-primary-500',
 			icon: 'up'
 		},
 		{
-			label: 'Tony',
+			label: 'Johan',
 			stats: '2,550',
 			progress: 72,
 			color: 'stroke-tertiary-500',
@@ -154,7 +154,7 @@
 		<div class="card leaderboard">
 		{#each Object.entries(sortedSimVotes) as [key, value], index}
 			{#if index==0}
-				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase()}>
+				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase().replace(/\//g, '')}>
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
 						<h1 class={`text-3l mb-0 animate-bounce`}>
@@ -165,7 +165,7 @@
 					</div>
 				</div>
 			{:else}
-				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase()}>
+				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase().replace(/\//g, '')}>
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
 						<h1 class={`text-3l mb-0`}>
@@ -218,12 +218,12 @@
 		margin: auto;
 	}
 
-	.bigdaddy {
-		background-color: #005fb3;
+	.allydan {
+		background-color: #00b349;
 	}
 
-	.tony {
-		background-color: #b84d00;
+	.johan {
+		background-color: #fd4b4b;
 	}
 
 	.thenightpatrol {
@@ -274,7 +274,7 @@
 		max-height: 300px;
 	}
 
-	/* .tony {
+	/* .johan {
 		background-color: chocolate;
 	} */
 

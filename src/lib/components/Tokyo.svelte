@@ -17,9 +17,9 @@
 
     
     const conicStops: ConicStop[] = [
-            { label: 'Tony', color: 'chocolate', start: 0, end: 35 },
+            { label: 'Johan', color: 'red', start: 0, end: 35 },
             { label: 'The Night Patrol', color: 'dodgerblue', start: 35, end: 40 },
-            { label: 'BigDaddy', color: 'blue', start: 40, end: 100 }
+            { label: 'Ally/Dan', color: 'blue', start: 40, end: 100 }
     ];
 
     function handleMouseover(event: MouseEvent) {
