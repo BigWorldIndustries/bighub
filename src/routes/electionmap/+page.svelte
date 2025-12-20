@@ -25,8 +25,8 @@
 	$: sortedSimVotes = {};
 	let votePercent: VotePercent = {};
 	let candidateColor: CandidateColor = {
-		'BigDaddy': 'stroke-secondary-500',
-		'Tony': 'stroke-warning-500',
+		'Ally/Dan': 'stroke-secondary-500',
+		'Johan': 'stroke-warning-500',
 		'TheNightPatrol': 'stroke-tertiary-500'
 	};
 	let prefectures: any[] = [];
@@ -54,14 +54,14 @@
 
 	const mockdata = [
 		{
-			label: 'BigDaddy',
+			label: 'Ally/Dan',
 			stats: '456,578',
 			progress: 65,
 			color: 'stroke-primary-500',
 			icon: 'up'
 		},
 		{
-			label: 'Tony',
+			label: 'Johan',
 			stats: '2,550',
 			progress: 72,
 			color: 'stroke-tertiary-500',
@@ -218,12 +218,12 @@
 		margin: auto;
 	}
 
-	.bigdaddy {
-		background-color: #005fb3;
+	.allydan {
+		background-color: #00b349;
 	}
 
-	.tony {
-		background-color: #b84d00;
+	.johan {
+		background-color: #fd4b4b;
 	}
 
 	.thenightpatrol {
@@ -274,7 +274,7 @@
 		max-height: 300px;
 	}
 
-	/* .tony {
+	/* .johan {
 		background-color: chocolate;
 	} */
 
