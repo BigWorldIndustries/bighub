@@ -32,7 +32,7 @@
 	let prefectures: any[] = [];
 	let noOfPefectures = 47;
 
-	let endDate = new Date("2024-12-25"); // election end date
+	let endDate = new Date("2025-12-25"); // election end date
 	let hoursUntil = 0; 
 	let minutesUntil = 0;
 	let timeDifference = 0;
