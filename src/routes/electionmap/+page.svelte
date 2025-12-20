@@ -154,7 +154,7 @@
 		<div class="card leaderboard">
 		{#each Object.entries(sortedSimVotes) as [key, value], index}
 			{#if index==0}
-				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase()}>
+				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase().replace(/\//g, '')}>
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
 						<h1 class={`text-3l mb-0 animate-bounce`}>
@@ -165,7 +165,7 @@
 					</div>
 				</div>
 			{:else}
-				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase()}>
+				<div class={"flex space-x-5 items-center card withspace " + key.toLowerCase().replace(/\//g, '')}>
 					<Avatar src={"/images/"+key.toLowerCase()+".jpg"} width="w-32" rounded="rounded-full" />
 					<div class="space-y-2">
 						<h1 class={`text-3l mb-0`}>
