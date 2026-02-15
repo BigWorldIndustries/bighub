@@ -7,8 +7,8 @@
 		<img class='logo' src="/images/bigworld-logo.svg" width="50%" alt="fotomize" />
 		
         <div class="button-container">
-            <a class="btn variant-filled" href="" target="_self" rel="noreferrer">
-                Vote for Big World President
+            <a class="btn variant-filled" href="/nominate" target="_self" rel="noreferrer">
+                Supreme Court Nomination
             </a>
             <a class="btn variant-filled" href="/electionmap" target="_self" rel="noreferrer">
                 View Live Results Map
