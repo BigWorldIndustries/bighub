@@ -45,7 +45,34 @@ function verifyAndDecodeSession(cookie: string): SessionData | null {
 	}
 }
 
+const KOFI_WEBHOOK_PATH = '/api/olympics/kofi';
+const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function isFormContentType(request: Request): boolean {
+	const type = request.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
+	return (
+		type === 'application/x-www-form-urlencoded' ||
+		type === 'multipart/form-data' ||
+		type === 'text/plain'
+	);
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
+	// SvelteKit's built-in origin check is off so Ko-fi webhooks can POST.
+	// Re-apply it everywhere except the token-authenticated Ko-fi route.
+	if (
+		!dev &&
+		event.url.pathname !== KOFI_WEBHOOK_PATH &&
+		MUTATING.has(event.request.method) &&
+		isFormContentType(event.request)
+	) {
+		const origin = event.request.headers.get('origin');
+		if (origin !== event.url.origin) {
+			return new Response(`Cross-site ${event.request.method} form submissions are forbidden`, {
+				status: 403
+			});
+		}
+	}
 	// Discord OAuth redirect is registered for localhost, not 127.0.0.1.
 	// Cookies do not carry across those hosts, which causes "Invalid state parameter".
 	if (dev && event.url.hostname === '127.0.0.1') {

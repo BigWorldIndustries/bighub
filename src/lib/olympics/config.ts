@@ -17,7 +17,8 @@ export function generatePaymentCode(): string {
 
 export function extractPaymentCode(message: string | null | undefined): string | null {
 	if (!message) return null;
-	const match = message.toUpperCase().match(PAYMENT_CODE_RE);
+	const normalized = message.toUpperCase().replace(/[\u2010-\u2015\u2212]/g, '-');
+	const match = normalized.match(PAYMENT_CODE_RE);
 	return match ? match[0] : null;
 }
 
