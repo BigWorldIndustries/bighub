@@ -1,4 +1,5 @@
-import type { Handle } from '@sveltejs/kit';
+import { redirect, type Handle } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import { AUTH_SECRET } from '$env/static/private';
 import { createHmac } from 'crypto';
 
@@ -45,6 +46,14 @@ function verifyAndDecodeSession(cookie: string): SessionData | null {
 }
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// Discord OAuth redirect is registered for localhost, not 127.0.0.1.
+	// Cookies do not carry across those hosts, which causes "Invalid state parameter".
+	if (dev && event.url.hostname === '127.0.0.1') {
+		const url = new URL(event.url);
+		url.hostname = 'localhost';
+		throw redirect(307, url.toString());
+	}
+
 	const sessionCookie = event.cookies.get('session');
 
 	if (sessionCookie) {

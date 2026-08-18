@@ -1,6 +1,9 @@
 import { error, json } from '@sveltejs/kit';
 import { initializeFirebaseAdmin } from '$lib/server/firebase/firebase.server';
 import { FieldValue } from 'firebase-admin/firestore';
+import { OLYMPICS_FORM_ID } from '$lib/olympics/config';
+import { saveOlympicsSignup } from '$lib/server/olympics/nations.server';
+import { ControlledError } from '$lib/server/util/util.server';
 
 export const GET = async ({ url, locals }: any) => {
 	const formId = url.searchParams.get('formId');
@@ -64,6 +67,11 @@ export const POST = async ({ request, locals }: any) => {
 		const admin = initializeFirebaseAdmin();
 		const db = admin.firestore();
 
+		if (formId === OLYMPICS_FORM_ID) {
+			await saveOlympicsSignup(db, locals.discordUser, form_data);
+			return json({ success: true });
+		}
+
 		const submissionRef = db
 			.collection('forms')
 			.doc(formId)
@@ -81,6 +89,9 @@ export const POST = async ({ request, locals }: any) => {
 		return json({ success: true });
 	} catch (err) {
 		if (err instanceof Response) throw err;
+		if (err instanceof ControlledError) {
+			throw error(err.code, err.msg);
+		}
 		console.error('Error submitting form:', err);
 		throw error(500, 'Failed to submit form');
 	}

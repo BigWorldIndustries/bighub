@@ -64,6 +64,9 @@
 				<a href="/electionmap" class="btn btn-sm variant-ghost-surface">
 					Live Map
 				</a>
+				<a href="/olympics/signup" class="btn btn-sm variant-ghost-surface">
+					Olympics
+				</a>
 				<a href="/nominate" class="btn btn-sm variant-ghost-surface">
 					Nominate
 				</a>
