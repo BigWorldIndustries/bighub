@@ -630,6 +630,11 @@
 									<ul class="space-y-4 text-surface-200">
 										<li>
 											<p class="font-semibold">Big World Merch</p>
+											<p class="text-sm text-surface-400 mt-1">
+												<a href="/olympics" class="underline hover:text-primary-300">
+													Check out what was given out last Olympics.
+												</a>
+											</p>
 											<ul class="list-disc ml-6 mt-2 space-y-2 text-surface-300">
 												<li>
 													1 Big World Olympics 2026 sealed booster pack (10-15 cards)
@@ -671,9 +676,6 @@
 										The entry fee helps offset that cost, and guarantees that our sign-ups are legitimate, to
 										weed out flakers. Flakers ruin things for everyone because they skew the count and mess up
 										the schedule for legit participants. ${MIN_ENTRY_FEE} is a way to say "I'm serious about participating".
-									</p>
-									<p class="text-surface-200">
-										If for whatever reason the Olympics is cancelled, you will be refunded.
 									</p>
 								</div>
 							</div>
