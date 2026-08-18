@@ -21,11 +21,21 @@ export const POST = async ({ request }) => {
 		throw error(401, 'Invalid verification token');
 	}
 
+	console.info('[kofi] webhook received', {
+		type: payload.type,
+		amount: payload.amount,
+		currency: payload.currency,
+		from_name: payload.from_name,
+		message: payload.message,
+		kofi_transaction_id: payload.kofi_transaction_id
+	});
+
 	try {
 		const admin = initializeFirebaseAdmin();
 		await processKofiPayment(admin.firestore(), payload);
 	} catch (err) {
 		console.error('Ko-fi webhook processing failed:', err);
+		throw error(500, 'Failed to process Ko-fi webhook');
 	}
 
 	return json({ ok: true });

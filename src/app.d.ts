@@ -23,4 +23,5 @@ declare module '$env/static/private' {
 	export const FIREBASE_STORAGEBUCKET: string;
 	export const FIREBASE_SERVICE_KEY: string;
 	export const KOFI_VERIFICATION_TOKEN: string;
+	export const DISCORD_OLYMPICS_WEBHOOK_URL: string;
 }

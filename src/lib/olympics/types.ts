@@ -30,9 +30,15 @@ export interface OlympicsFormData {
 	paidAt?: { _seconds?: number; seconds?: number } | string;
 }
 
+export interface OlympicsDiscordAnnounce {
+	submittedAt?: { _seconds?: number; seconds?: number } | string;
+	paidTransactionIds?: string[];
+}
+
 export interface OlympicsSubmission {
 	discordUserId: string;
 	discordUsername: string;
 	form_data: OlympicsFormData;
 	submittedAt?: { _seconds?: number; seconds?: number } | string;
+	discordAnnounce?: OlympicsDiscordAnnounce;
 }

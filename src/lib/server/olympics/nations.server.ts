@@ -10,7 +10,13 @@ import {
 	type AvailabilityStatus
 } from '$lib/olympics/config';
 import { getAvailabilityDays } from '$lib/olympics/dates';
-import type { OlympicsFormData, OlympicsNation, OlympicsSuggestedGame } from '$lib/olympics/types';
+import type {
+	OlympicsDiscordAnnounce,
+	OlympicsFormData,
+	OlympicsNation,
+	OlympicsSuggestedGame
+} from '$lib/olympics/types';
+import { notifyOlympicsSignup } from './discord.server';
 import {
 	listOlympicsSuggestedGames,
 	readNewSuggestedGames,
@@ -212,6 +218,9 @@ export async function saveOlympicsSignup(
 
 	const nationRef = nationsCollection(db).doc(form_data.nationId);
 	const paymentCodeRef = paymentCodesCollection(db).doc(paymentCode);
+	const existingAnnounce = existingSnap.data()?.discordAnnounce as
+		| OlympicsDiscordAnnounce
+		| undefined;
 
 	await db.runTransaction(async (tx) => {
 		const existingNation = form_data.createdNation ? await tx.get(nationRef) : null;
@@ -243,7 +252,8 @@ export async function saveOlympicsSignup(
 			discordUsernameLower: user.username.toLowerCase(),
 			form_data,
 			submittedAt: existingSnap.data()?.submittedAt ?? FieldValue.serverTimestamp(),
-			updatedAt: FieldValue.serverTimestamp()
+			updatedAt: FieldValue.serverTimestamp(),
+			...(existingAnnounce ? { discordAnnounce: existingAnnounce } : {})
 		});
 
 		tx.set(paymentCodeRef, {
@@ -251,6 +261,19 @@ export async function saveOlympicsSignup(
 			paymentCode
 		});
 	});
+
+	if (!existingAnnounce?.submittedAt) {
+		const posted = await notifyOlympicsSignup({
+			discordUserId: user.id,
+			nationName: form_data.nationName,
+			nationId: form_data.nationId
+		});
+		if (posted) {
+			await submissionRef.update({
+				'discordAnnounce.submittedAt': FieldValue.serverTimestamp()
+			});
+		}
+	}
 
 	return form_data;
 }

@@ -1,5 +1,7 @@
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { MIN_ENTRY_FEE, extractPaymentCode } from '$lib/olympics/config';
+import type { OlympicsDiscordAnnounce } from '$lib/olympics/types';
+import { notifyOlympicsPayment } from './discord.server';
 import {
 	paymentCodesCollection,
 	submissionsCollection,
@@ -24,29 +26,45 @@ function asAmount(value: string | undefined): number | undefined {
 	return Number.isFinite(amount) ? amount : undefined;
 }
 
+type MarkPaidResult =
+	| { matched: false }
+	| {
+			matched: true;
+			duplicate: boolean;
+			alreadyAnnounced: boolean;
+			paymentId: string;
+	  };
+
 async function markSubmissionPaid(
 	db: Firestore,
 	discordUserId: string,
 	payload: KofiWebhookPayload
-): Promise<boolean> {
+): Promise<MarkPaidResult> {
 	const submissionRef = submissionsCollection(db).doc(discordUserId);
 	const snap = await submissionRef.get();
-	if (!snap.exists) return false;
+	if (!snap.exists) return { matched: false };
 
-	const form = snap.data()?.form_data ?? {};
-	if (form.kofiTransactionId && form.kofiTransactionId === payload.kofi_transaction_id) {
-		return true;
+	const data = snap.data() ?? {};
+	const form = data.form_data ?? {};
+	const paymentId =
+		payload.kofi_transaction_id || payload.message_id || `kofi-${Date.now()}`;
+	const announce = (data.discordAnnounce ?? {}) as OlympicsDiscordAnnounce;
+	const alreadyAnnounced = (announce.paidTransactionIds ?? []).includes(paymentId);
+	const duplicate = Boolean(
+		form.kofiTransactionId && form.kofiTransactionId === payload.kofi_transaction_id
+	);
+
+	if (!duplicate) {
+		await submissionRef.update({
+			'form_data.paymentStatus': 'paid',
+			'form_data.paidAmount': asAmount(payload.amount),
+			'form_data.kofiTransactionId': payload.kofi_transaction_id ?? null,
+			'form_data.paidAt': FieldValue.serverTimestamp(),
+			updatedAt: FieldValue.serverTimestamp()
+		});
 	}
 
-	await submissionRef.update({
-		'form_data.paymentStatus': 'paid',
-		'form_data.paidAmount': asAmount(payload.amount),
-		'form_data.kofiTransactionId': payload.kofi_transaction_id ?? null,
-		'form_data.paidAt': FieldValue.serverTimestamp(),
-		updatedAt: FieldValue.serverTimestamp()
-	});
-
-	return true;
+	return { matched: true, duplicate, alreadyAnnounced, paymentId };
 }
 
 async function findByEmail(db: Firestore, email: string): Promise<string | null> {
@@ -70,7 +88,9 @@ async function findByUsername(db: Firestore, name: string): Promise<string | nul
 }
 
 export async function processKofiPayment(db: Firestore, payload: KofiWebhookPayload): Promise<void> {
-	const code = extractPaymentCode(payload.message ?? undefined);
+	const code = extractPaymentCode(
+		[payload.message, payload.from_name].filter(Boolean).join(' ')
+	);
 	let discordUserId: string | null = null;
 	let matchedBy = '';
 
@@ -106,8 +126,22 @@ export async function processKofiPayment(db: Firestore, payload: KofiWebhookPayl
 	}
 
 	if (discordUserId) {
-		const updated = await markSubmissionPaid(db, discordUserId, payload);
-		if (updated) return;
+		const result = await markSubmissionPaid(db, discordUserId, payload);
+		if (result.matched) {
+			if (!result.alreadyAnnounced) {
+				const posted = await notifyOlympicsPayment({
+					discordUserId,
+					amount,
+					rawAmount: payload.amount
+				});
+				if (posted && result.paymentId) {
+					await submissionsCollection(db).doc(discordUserId).update({
+						'discordAnnounce.paidTransactionIds': FieldValue.arrayUnion(result.paymentId)
+					});
+				}
+			}
+			return;
+		}
 	}
 
 	const txId = payload.kofi_transaction_id || payload.message_id || `unknown-${Date.now()}`;
