@@ -80,6 +80,11 @@
   <header class="mb-12">
     <h1 class="text-4xl font-bold text-white mb-4 drop-shadow-md">What are the Big World Olympics?</h1>
     <h2 class="text-2xl text-gray-200 drop-shadow-sm">...and what's in it for me?</h2>
+    <div class="flex justify-center mt-6">
+      <a href="/olympics/signup" class="btn variant-filled-primary">
+        Sign up for Big World Olympics 2026
+      </a>
+    </div>
   </header>
 
   <article class="prose prose-lg max-w-none prose-invert">
@@ -90,13 +95,12 @@
         completely free to play, and totally up to you how much you want to get involved.
     </p>
 
-    <h2 class="text-2xl text-gray-200 drop-shadow-sm">Big World Olympics 2025</h2>
+    <h2 class="text-2xl text-gray-200 drop-shadow-sm">Big World Olympics 2026</h2>
     <p class="mb-6 text-gray-100">
-        Big World Olympics 2025, slated for winter 2025, is in the early planning stages, and for the 
+        Big World Olympics 2026 is happening in September 2026, and for the 
         first time, will involve <b>multiple Discord servers</b> competing against each other as their 
         own nation. If you are part of a Discord server or community that would be interested in participating, 
-        please sign this interest form and share with your community: 
-        <a href="https://forms.gle/WjAC4NQ1XMrczPkE7" target="_blank">https://forms.gle/WjAC4NQ1XMrczPkE7</a>
+        please <a href="/olympics/signup">sign up here</a> and share with your community.
     </p>
 
     <h2 class="text-2xl text-gray-200 drop-shadow-sm">Big World Olympics 2024</h2>

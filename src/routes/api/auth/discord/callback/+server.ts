@@ -47,7 +47,10 @@ export const GET = async ({ url, cookies }: any) => {
 
 	// Verify state parameter
 	if (!state || !storedState || state !== storedState) {
-		throw error(400, 'Invalid state parameter');
+		throw error(
+			400,
+			'Invalid state parameter. Start login from http://localhost:5173 (not 127.0.0.1) and try again.'
+		);
 	}
 
 	if (!code) {

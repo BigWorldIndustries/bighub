@@ -7,6 +7,9 @@
 		<img class='logo' src="/images/bigworld-logo.svg" width="50%" alt="fotomize" />
 		
         <div class="button-container">
+            <a class="btn variant-filled" href="/olympics/signup" target="_self" rel="noreferrer">
+                Olympics Sign-Up
+            </a>
             <a class="btn variant-filled" href="/nominate" target="_self" rel="noreferrer">
                 Supreme Court Nomination
             </a>
