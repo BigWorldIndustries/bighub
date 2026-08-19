@@ -47,6 +47,14 @@ export function defaultAvailability(): Record<string, AvailabilityStatus> {
 	return availability;
 }
 
+export function allDaysAvailable(): Record<string, AvailabilityStatus> {
+	const availability: Record<string, AvailabilityStatus> = {};
+	for (const day of getAvailabilityDays()) {
+		availability[day.date] = 'available';
+	}
+	return availability;
+}
+
 export function cycleAvailability(status: AvailabilityStatus): AvailabilityStatus {
 	return AVAILABILITY_CYCLE[status];
 }

@@ -63,7 +63,7 @@ export const GAME_BADGES: Record<BadgeId, GameBadge> = {
 		id: 'team',
 		label: 'Team Event',
 		tooltip:
-			'You will be paired up with teammate(s) from your nation, make sure they sign up as well!',
+			'You will be paired up with teammate(s) from your house, make sure they sign up as well!',
 		classes: 'bg-sky-600 text-white'
 	},
 	suggested: {

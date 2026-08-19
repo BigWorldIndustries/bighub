@@ -9,6 +9,11 @@ import {
 	slugifyNationName,
 	type AvailabilityStatus
 } from '$lib/olympics/config';
+import {
+	DEFAULT_NATION_COLOR,
+	isNationColorId,
+	parseNationEmojis
+} from '$lib/olympics/nationStyle';
 import { getAvailabilityDays } from '$lib/olympics/dates';
 import type {
 	OlympicsDiscordAnnounce,
@@ -38,28 +43,70 @@ export async function listOlympicsNations(db: Firestore): Promise<OlympicsNation
 	byId.set(FREE_AGENT_ID, { id: FREE_AGENT_ID, name: 'Free Agent', seed: true });
 
 	for (const nation of SEED_NATIONS) {
-		byId.set(nation.id, { id: nation.id, name: nation.name, seed: true });
+		byId.set(nation.id, {
+			id: nation.id,
+			name: nation.name,
+			seed: true,
+			captain: nation.captain,
+			colorScheme: nation.colorScheme,
+			emojis: [...nation.emojis]
+		});
 	}
 
+	const needsCaptainLookup: { id: string; createdBy: string }[] = [];
+
 	for (const doc of snapshot.docs) {
+		if (byId.has(doc.id)) continue;
 		const data = doc.data();
-		if (!byId.has(doc.id)) {
-			byId.set(doc.id, {
-				id: doc.id,
-				name: data.name ?? doc.id,
-				seed: false,
-				createdBy: data.createdBy
-			});
+		const createdBy = typeof data.createdBy === 'string' ? data.createdBy : undefined;
+		const storedCaptain =
+			typeof data.createdByUsername === 'string' ? data.createdByUsername.trim() : '';
+		const colorScheme =
+			typeof data.colorScheme === 'string' && isNationColorId(data.colorScheme)
+				? data.colorScheme
+				: undefined;
+		const emojis = parseNationEmojis(data.emojis);
+		byId.set(doc.id, {
+			id: doc.id,
+			name: data.name ?? doc.id,
+			seed: false,
+			createdBy,
+			...(storedCaptain ? { captain: storedCaptain } : {}),
+			...(colorScheme ? { colorScheme } : {}),
+			...(emojis.length ? { emojis } : {})
+		});
+		if (createdBy && !storedCaptain) {
+			needsCaptainLookup.push({ id: doc.id, createdBy });
 		}
 	}
 
-		return Array.from(byId.values()).sort((a, b) => {
-			if (a.id === FREE_AGENT_ID) return -1;
-			if (b.id === FREE_AGENT_ID) return 1;
-			if (a.seed && !b.seed) return -1;
-			if (!a.seed && b.seed) return 1;
-			return a.name.localeCompare(b.name);
-		});
+	if (needsCaptainLookup.length) {
+		const uniqueIds = [...new Set(needsCaptainLookup.map((item) => item.createdBy))];
+		const snaps = await Promise.all(
+			uniqueIds.map((id) => submissionsCollection(db).doc(id).get())
+		);
+		const usernames = new Map<string, string>();
+		for (const snap of snaps) {
+			const username = snap.data()?.discordUsername;
+			if (typeof username === 'string' && username.trim()) {
+				usernames.set(snap.id, username.trim());
+			}
+		}
+		for (const item of needsCaptainLookup) {
+			const captain = usernames.get(item.createdBy);
+			if (!captain) continue;
+			const nation = byId.get(item.id);
+			if (nation) nation.captain = captain;
+		}
+	}
+
+	return Array.from(byId.values()).sort((a, b) => {
+		if (a.id === FREE_AGENT_ID) return -1;
+		if (b.id === FREE_AGENT_ID) return 1;
+		if (a.seed && !b.seed) return -1;
+		if (!a.seed && b.seed) return 1;
+		return a.name.localeCompare(b.name);
+	});
 }
 
 function asString(value: unknown): string {
@@ -87,15 +134,15 @@ export function normalizeOlympicsFormData(
 
 	if (createdNation) {
 		if (nationName.length < 2) {
-			throw new ControlledError(400, 'Nation name must be at least 2 characters.');
+			throw new ControlledError(400, 'House name must be at least 2 characters.');
 		}
 		if (nationName.length > 40) {
-			throw new ControlledError(400, 'Nation name must be 40 characters or fewer.');
+			throw new ControlledError(400, 'House name must be 40 characters or fewer.');
 		}
 
 		const slug = slugifyNationName(nationName);
 		if (!slug) {
-			throw new ControlledError(400, 'Nation name must include letters or numbers.');
+			throw new ControlledError(400, 'House name must include letters or numbers.');
 		}
 
 		const existing = nations.find((nation) => nation.id === slug);
@@ -109,7 +156,7 @@ export function normalizeOlympicsFormData(
 	} else {
 		const existing = nations.find((nation) => nation.id === nationId);
 		if (!existing) {
-			throw new ControlledError(400, 'Please select a nation or create your own.');
+			throw new ControlledError(400, 'Please select a house or create your own.');
 		}
 		nationName = existing.name;
 	}
@@ -126,7 +173,12 @@ export function normalizeOlympicsFormData(
 			: {};
 
 	const availability: Record<string, AvailabilityStatus> = {};
+	const anyDateWithNotice = Boolean(raw.anyDateWithNotice);
 	for (const day of getAvailabilityDays()) {
+		if (anyDateWithNotice) {
+			availability[day.date] = 'available';
+			continue;
+		}
 		const status = availabilityRaw[day.date];
 		if (typeof status !== 'string' || !VALID_STATUSES.has(status as AvailabilityStatus)) {
 			throw new ControlledError(400, 'Please mark availability for every day.');
@@ -137,6 +189,14 @@ export function normalizeOlympicsFormData(
 	const actuallyCreated =
 		createdNation && !nations.some((nation) => nation.id === nationId);
 
+	const colorScheme =
+		actuallyCreated && typeof raw.colorScheme === 'string' && isNationColorId(raw.colorScheme)
+			? raw.colorScheme
+			: actuallyCreated
+				? DEFAULT_NATION_COLOR
+				: undefined;
+	const emojis = actuallyCreated ? parseNationEmojis(raw.emojis) : undefined;
+
 	return {
 		form: {
 			...(email ? { email } : {}),
@@ -144,8 +204,11 @@ export function normalizeOlympicsFormData(
 			nationId,
 			nationName,
 			createdNation: actuallyCreated,
+			...(colorScheme ? { colorScheme } : {}),
+			...(emojis?.length ? { emojis } : {}),
 			games,
 			availability,
+			...(anyDateWithNotice ? { anyDateWithNotice: true } : {}),
 			entryAmount: MIN_ENTRY_FEE,
 			paymentStatus: 'pending' as const
 		},
@@ -223,7 +286,7 @@ export async function saveOlympicsSignup(
 		| undefined;
 
 	await db.runTransaction(async (tx) => {
-		const existingNation = form_data.createdNation ? await tx.get(nationRef) : null;
+		const existingNation = Boolean(rawFormData.createdNation) ? await tx.get(nationRef) : null;
 		const suggestionItems = await readNewSuggestedGames(tx, db, newSuggestions);
 
 		if (form_data.createdNation) {
@@ -232,15 +295,35 @@ export async function saveOlympicsSignup(
 				if (owner && owner !== user.id) {
 					throw new ControlledError(
 						409,
-						'That nation name was just taken. Please choose another or join the existing one.'
+						'That house name was just taken. Please choose another or join the existing one.'
 					);
 				}
 			} else {
 				tx.set(nationRef, {
 					name: form_data.nationName,
 					createdBy: user.id,
+					createdByUsername: user.username,
+					...(form_data.colorScheme ? { colorScheme: form_data.colorScheme } : {}),
+					...(form_data.emojis?.length ? { emojis: form_data.emojis } : {}),
 					createdAt: FieldValue.serverTimestamp()
 				});
+			}
+		} else if (Boolean(rawFormData.createdNation)) {
+			const owner = existingNation?.data()?.createdBy;
+			if (existingNation?.exists && owner === user.id) {
+				const colorScheme =
+					typeof rawFormData.colorScheme === 'string' && isNationColorId(rawFormData.colorScheme)
+						? rawFormData.colorScheme
+						: DEFAULT_NATION_COLOR;
+				tx.set(
+					nationRef,
+					{
+						createdByUsername: user.username,
+						colorScheme,
+						emojis: parseNationEmojis(rawFormData.emojis)
+					},
+					{ merge: true }
+				);
 			}
 		}
 

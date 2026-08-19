@@ -99,7 +99,7 @@
     <p class="mb-6 text-gray-100">
         Big World Olympics 2026 is happening in September 2026, and for the 
         first time, will involve <b>multiple Discord servers</b> competing against each other as their 
-        own nation. If you are part of a Discord server or community that would be interested in participating, 
+        own house. If you are part of a Discord server or community that would be interested in participating, 
         please <a href="/olympics/signup">sign up here</a> and share with your community.
     </p>
 

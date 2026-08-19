@@ -5,6 +5,9 @@ export interface OlympicsNation {
 	name: string;
 	seed?: boolean;
 	createdBy?: string;
+	captain?: string;
+	colorScheme?: string;
+	emojis?: string[];
 }
 
 export interface OlympicsSuggestedGame {
@@ -20,8 +23,11 @@ export interface OlympicsFormData {
 	nationId: string;
 	nationName: string;
 	createdNation: boolean;
+	colorScheme?: string;
+	emojis?: string[];
 	games: string[];
 	availability: Record<string, AvailabilityStatus>;
+	anyDateWithNotice?: boolean;
 	entryAmount: number;
 	paymentCode?: string;
 	paymentStatus: 'pending' | 'paid';
