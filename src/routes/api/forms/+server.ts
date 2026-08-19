@@ -68,6 +68,9 @@ export const POST = async ({ request, locals }: any) => {
 		const db = admin.firestore();
 
 		if (formId === OLYMPICS_FORM_ID) {
+			if (!locals.inBigWorld) {
+				throw error(403, 'Join the Big World Discord server to sign up.');
+			}
 			await saveOlympicsSignup(db, locals.discordUser, form_data);
 			return json({ success: true });
 		}

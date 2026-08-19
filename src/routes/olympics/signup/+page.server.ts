@@ -4,10 +4,25 @@ import { initializeFirebaseAdmin } from '$lib/server/firebase/firebase.server';
 import { ensureOlympicsPaymentCode } from '$lib/server/olympics/nations.server';
 import type { OlympicsNation, OlympicsSubmission, OlympicsSuggestedGame } from '$lib/olympics/types';
 
-export const load = async ({ locals, fetch }: { locals: App.Locals; fetch: typeof globalThis.fetch }) => {
+export const load = async ({
+	locals,
+	fetch,
+	url
+}: {
+	locals: App.Locals;
+	fetch: typeof globalThis.fetch;
+	url: URL;
+}) => {
 	if (!locals.discordUser) {
 		throw redirect(302, '/api/auth/discord?returnTo=/olympics/signup');
 	}
+
+	// Older sessions predate the guilds scope — send them through Discord once.
+	if (locals.inBigWorld === undefined) {
+		throw redirect(302, '/api/auth/discord?returnTo=/olympics/signup');
+	}
+
+	const previewGate = url.searchParams.get('previewGate') === '1';
 
 	const [submissionRes, nationsRes, gamesRes] = await Promise.all([
 		fetch(`/api/forms?formId=${OLYMPICS_FORM_ID}`),
@@ -35,6 +50,8 @@ export const load = async ({ locals, fetch }: { locals: App.Locals; fetch: typeo
 
 	return {
 		user: locals.discordUser,
+		inBigWorld: locals.inBigWorld === true,
+		previewGate,
 		existingSubmission,
 		nations: (nationsData.nations ?? []) as OlympicsNation[],
 		suggestedGames: (gamesData.suggested ?? []) as OlympicsSuggestedGame[],

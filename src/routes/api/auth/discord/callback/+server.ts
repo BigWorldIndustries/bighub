@@ -5,6 +5,7 @@ import {
 	DISCORD_REDIRECT_URI,
 	AUTH_SECRET 
 } from '$env/static/private';
+import { BIG_WORLD_GUILD_ID } from '$lib/olympics/config';
 import { createHmac } from 'crypto';
 
 // Use trimmed redirect URI to avoid mismatches with Discord (e.g. trailing spaces in portal)
@@ -25,9 +26,13 @@ interface DiscordUser {
 	avatar: string | null;
 }
 
-function createSessionCookie(discordUser: { id: string; username: string; avatar: string | null }): string {
+function createSessionCookie(
+	discordUser: { id: string; username: string; avatar: string | null },
+	inBigWorld: boolean
+): string {
 	const sessionData = {
 		discordUser,
+		inBigWorld,
 		expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
 	};
 
@@ -104,12 +109,32 @@ export const GET = async ({ url, cookies }: any) => {
 
 		const discordUser: DiscordUser = await userResponse.json();
 
+		let inBigWorld = false;
+		try {
+			const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
+				headers: {
+					Authorization: `Bearer ${tokenData.access_token}`
+				}
+			});
+			if (guildsResponse.ok) {
+				const guilds = (await guildsResponse.json()) as { id: string }[];
+				inBigWorld = guilds.some((guild) => guild.id === BIG_WORLD_GUILD_ID);
+			} else {
+				console.error('Discord guilds fetch failed:', await guildsResponse.text());
+			}
+		} catch (guildErr) {
+			console.error('Discord guilds fetch error:', guildErr);
+		}
+
 		// Create session cookie
-		const sessionCookie = createSessionCookie({
-			id: discordUser.id,
-			username: discordUser.username,
-			avatar: discordUser.avatar
-		});
+		const sessionCookie = createSessionCookie(
+			{
+				id: discordUser.id,
+				username: discordUser.username,
+				avatar: discordUser.avatar
+			},
+			inBigWorld
+		);
 
 		// Set session cookie
 		cookies.set('session', sessionCookie, {
