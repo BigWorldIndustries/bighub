@@ -14,7 +14,7 @@ function pickRandom<T>(items: T[]): T {
 	return items[Math.floor(Math.random() * items.length)]!;
 }
 
-/** Epic signup lines for nation athletes. `{mention}` and `{nation}` are substituted before posting. */
+/** Epic signup lines for house athletes. `{mention}` and `{nation}` (house name) are substituted before posting. */
 export const NATION_SIGNUP_ANNOUNCEMENTS = [
 	'**A NEW OLYMPIAN HAS EMERGED** 🔥🏅\n{mention} has taken the torch for **{nation}** and cast their name for the Big World Olympics.',
 	'**THE FLAME IGNITES** 🔥\n{mention} of **{nation}** has stepped forward to compete in the Big World Olympics.',
@@ -24,14 +24,14 @@ export const NATION_SIGNUP_ANNOUNCEMENTS = [
 	'**THE TORCH PASSES ON** 🔥\n{mention} flies the colors of **{nation}** and enters the Big World Olympics.'
 ];
 
-/** Free-agent lines — they are unbound, not representing a nation called "Free Agent". */
+/** Free-agent lines — they are unbound, not representing a house called "Free Agent". */
 export const FREE_AGENT_SIGNUP_ANNOUNCEMENTS = [
 	'**A NEW OLYMPIAN HAS EMERGED** 🔥🏅\n{mention} has taken the torch as a free agent and cast their name for the Big World Olympics.',
 	'**THE FLAME IGNITES** 🔥\n{mention} has stepped forward unbound — a free agent in the Big World Olympics.',
-	'**A CHALLENGER ENTERS THE GAMES** ⚔️🏆\n{mention} walks into the arena with no nation at their back, a free agent.',
+	'**A CHALLENGER ENTERS THE GAMES** ⚔️🏆\n{mention} walks into the arena with no house at their back, a free agent.',
 	'**THE ARENA GROWS LOUDER** 🏟️\n{mention} has answered the call of the Big World Olympics as a free agent.',
 	'**LET THE RECORD SHOW** 📜\n{mention} has inscribed their name for the Big World Olympics, competing as a free agent.',
-	'**THE TORCH PASSES ON** 🔥\n{mention} enters the Big World Olympics unclaimed, a free agent among the nations.'
+	'**THE TORCH PASSES ON** 🔥\n{mention} enters the Big World Olympics unclaimed, a free agent among the houses.'
 ];
 
 export function formatPrizeAmount(amount: number | undefined, raw?: string): string {

@@ -17,6 +17,6 @@ export const GET = async ({ locals }: { locals: App.Locals }) => {
 			throw error(err.code, err.msg);
 		}
 		console.error('Error listing olympics nations:', err);
-		throw error(500, 'Failed to load nations');
+		throw error(500, 'Failed to load houses');
 	}
 };

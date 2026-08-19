@@ -27,9 +27,9 @@ export const AVAILABILITY_START = '2026-08-17';
 export const AVAILABILITY_END = '2026-09-20';
 
 export const SEED_NATIONS = [
-	{ id: 'maharnegonia', name: 'Maharnegonia' },
-	{ id: 'zazuland', name: 'Zazuland' },
-	{ id: 'shneibler-isles', name: 'Shneibler Isles' }
+	{ id: 'maharnegonia', name: 'Maharnegonia', captain: 'Noonz', colorScheme: 'crimson', emojis: ['⚔️', '🛡️'] },
+	{ id: 'zazuland', name: 'Zazuland', captain: 'Zazu', colorScheme: 'ocean', emojis: ['👑', '🏰'] },
+	{ id: 'shneibler-isles', name: 'Shneibler Isles', captain: 'Dan', colorScheme: 'forest', emojis: ['🌊', '🏝️'] }
 ] as const;
 
 export type AvailabilityStatus = 'available' | 'tentative' | 'unavailable';

@@ -12,9 +12,18 @@
 		KOFI_USERNAME,
 		MIN_ENTRY_FEE,
 		OLYMPICS_FORM_ID,
-		slugifyNationName
+		slugifyNationName,
+		type AvailabilityStatus
 	} from '$lib/olympics/config';
-	import { defaultAvailability } from '$lib/olympics/dates';
+	import {
+		DEFAULT_NATION_COLOR,
+		NATION_COLOR_SCHEMES,
+		NATION_EMOJI_CHOICES,
+		firstGrapheme,
+		type NationColorId
+	} from '$lib/olympics/nationStyle';
+	import NationTitle from '$lib/components/olympics/NationTitle.svelte';
+	import { allDaysAvailable, defaultAvailability } from '$lib/olympics/dates';
 	import {
 		GAME_IDS,
 		OLYMPICS_GAMES,
@@ -41,19 +50,25 @@
 	};
 
 	const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	const TAB_LABELS = ['Contact', 'Nation', 'Events', 'Availability', 'Payment', 'Review'];
+	const TAB_LABELS = ['Contact', 'Allegiance', 'Events', 'Availability', 'Payment', 'Review'];
 
 	let tabSet = 0;
 	let email = '';
 	let phone = '';
 	let nationMode: 'join' | 'create' = 'join';
 	let selectedNationId = FREE_AGENT_ID;
+	let newNationColor: NationColorId = DEFAULT_NATION_COLOR;
+	let newNationEmojis: [string, string] = ['', ''];
+	let emojiSlot: 0 | 1 = 0;
+	const emojiSlots: Array<0 | 1> = [0, 1];
 	let newNationName = '';
 	let selectedGames: string[] = [];
 	let localSuggestions: OlympicsGame[] = [];
 	let suggestedName = '';
 	let suggestedError = '';
 	let availability = defaultAvailability();
+	let anyDateWithNotice = false;
+	let availabilityBeforeFlexible: Record<string, AvailabilityStatus> | null = null;
 	let isSubmitting = false;
 	let errorMessage = '';
 	let showForm = !data.existingSubmission;
@@ -66,14 +81,28 @@
 		phone = form?.phone ?? '';
 		selectedGames = form?.games ? [...form.games] : [];
 		availability = { ...defaultAvailability(), ...(form?.availability ?? {}) };
+		anyDateWithNotice = Boolean(form?.anyDateWithNotice);
+		availabilityBeforeFlexible = null;
+		if (anyDateWithNotice) {
+			availability = allDaysAvailable();
+		}
 		if (form?.createdNation) {
 			nationMode = 'create';
 			newNationName = form.nationName ?? '';
 			selectedNationId = FREE_AGENT_ID;
+			const existing = data.nations.find((nation) => nation.id === form.nationId);
+			newNationColor =
+				existing?.colorScheme &&
+				NATION_COLOR_SCHEMES.some((scheme) => scheme.id === existing.colorScheme)
+					? (existing.colorScheme as NationColorId)
+					: DEFAULT_NATION_COLOR;
+			newNationEmojis = [existing?.emojis?.[0] ?? '', existing?.emojis?.[1] ?? ''];
 		} else {
 			nationMode = 'join';
 			selectedNationId = form?.nationId ?? FREE_AGENT_ID;
 			newNationName = '';
+			newNationColor = DEFAULT_NATION_COLOR;
+			newNationEmojis = ['', ''];
 		}
 	}
 
@@ -93,10 +122,29 @@
 	$: pickerGames = [...OLYMPICS_GAMES, ...catalogSuggestions, ...sessionSuggestions].sort((a, b) =>
 		compareGamesByPopularity(a, b, data.signupCounts ?? {})
 	);
+	$: selectedNation = data.nations.find((nation) => nation.id === selectedNationId);
 	$: selectedNationName =
 		nationMode === 'create'
 			? newNationName.trim()
-			: data.nations.find((nation) => nation.id === selectedNationId)?.name ?? 'Free Agent';
+			: selectedNation?.name ?? 'Free Agent';
+	$: previewNation = {
+		name: newNationName.trim() || 'Your house',
+		emojis: newNationEmojis.filter(Boolean),
+		colorScheme: newNationColor
+	};
+
+	function pickEmoji(emoji: string) {
+		newNationEmojis[emojiSlot] = emoji;
+		newNationEmojis = newNationEmojis;
+		if (emojiSlot === 0) emojiSlot = 1;
+	}
+
+	function setEmojiFromInput(slot: 0 | 1, event: Event) {
+		const target = event.currentTarget as HTMLInputElement;
+		newNationEmojis[slot] = firstGrapheme(target.value);
+		newNationEmojis = newNationEmojis;
+	}
+
 	$: currentTabValid =
 		tabSet === 0 ? contactValid : tabSet === 1 ? nationValid : tabSet === 2 ? eventsValid : true;
 
@@ -225,6 +273,26 @@
 		}
 	}
 
+	function setAnyDateWithNotice(checked: boolean) {
+		anyDateWithNotice = checked;
+		if (checked) {
+			availabilityBeforeFlexible = { ...availability };
+			availability = allDaysAvailable();
+			return;
+		}
+		if (availabilityBeforeFlexible) {
+			availability = { ...availabilityBeforeFlexible };
+			availabilityBeforeFlexible = null;
+			return;
+		}
+		availability = defaultAvailability();
+	}
+
+	function onAnyDateToggle(event: Event) {
+		const target = event.currentTarget as HTMLInputElement;
+		setAnyDateWithNotice(target.checked);
+	}
+
 	function availabilityCounts(form: { availability?: OlympicsFormData['availability'] }) {
 		const values = Object.values(form.availability ?? {});
 		return {
@@ -250,8 +318,11 @@
 				nationId: nationMode === 'join' ? selectedNationId : '',
 				nationName: nationMode === 'create' ? newNationName.trim() : '',
 				createdNation: nationMode === 'create',
+				colorScheme: nationMode === 'create' ? newNationColor : undefined,
+				emojis: nationMode === 'create' ? newNationEmojis.filter(Boolean) : undefined,
 				games: selectedGames,
 				availability,
+				anyDateWithNotice,
 				entryAmount: MIN_ENTRY_FEE,
 				paymentStatus: 'pending'
 			};
@@ -377,6 +448,7 @@
 		{@const form = data.existingSubmission.form_data}
 		{@const counts = availabilityCounts(form)}
 		{@const paid = form.paymentStatus === 'paid'}
+		{@const nationCaptain = data.nations.find((nation) => nation.id === form.nationId)?.captain}
 		<div class="py-2">
 			<h1 class="text-3xl font-bold mb-2 text-center">
 				{paid ? 'Sign-up complete' : 'One last step to complete your sign-up'}
@@ -421,8 +493,16 @@
 
 			<div class="grid md:grid-cols-2 gap-4 mb-8">
 				<div class="signup-panel p-5">
-					<p class="text-sm text-surface-400 mb-1">Nation</p>
-					<p class="text-xl font-semibold">{form.nationName}</p>
+					<p class="text-sm text-surface-400 mb-1">House</p>
+					<NationTitle
+						name={form.nationName}
+						emojis={data.nations.find((nation) => nation.id === form.nationId)?.emojis ?? []}
+						colorScheme={data.nations.find((nation) => nation.id === form.nationId)?.colorScheme}
+						size="xl"
+					/>
+					{#if nationCaptain}
+						<p class="text-sm text-surface-400 mt-1">Captain: {nationCaptain}</p>
+					{/if}
 				</div>
 				<div class="signup-panel p-5">
 					<p class="text-sm text-surface-400 mb-1">Events</p>
@@ -430,9 +510,13 @@
 				</div>
 				<div class="signup-panel p-5">
 					<p class="text-sm text-surface-400 mb-1">Availability</p>
-					<p>
-						{counts.available} available · {counts.tentative} tentative · {counts.unavailable} not available
-					</p>
+					{#if form.anyDateWithNotice}
+						<p>Any date, with advance notice</p>
+					{:else}
+						<p>
+							{counts.available} available · {counts.tentative} tentative · {counts.unavailable} not available
+						</p>
+					{/if}
 				</div>
 				<div class="signup-panel p-5">
 					<p class="text-sm text-surface-400 mb-1">Submitted</p>
@@ -551,43 +635,148 @@
 							</div>
 						{:else if tabSet === 1}
 							<div class="space-y-6 max-w-xl mx-auto">
-								<h2 class="text-2xl font-bold text-center">Choose your nation</h2>
+								<div class="text-center space-y-1">
+									<h2 class="text-2xl font-bold">Choose Your Allegiance</h2>
+									<p class="text-surface-400">
+										Pick the house you will fight for in this year's Olympics.
+									</p>
+								</div>
 
-								<label class="flex items-start gap-3 cursor-pointer">
-									<input class="radio mt-1" type="radio" bind:group={nationMode} value="join" />
-									<div class="flex-1">
-										<p class="font-semibold mb-2">Join an existing nation</p>
-										<select class="select" bind:value={selectedNationId} disabled={nationMode !== 'join'}>
-											<option value={FREE_AGENT_ID}>Free Agent</option>
+								<div class="flex items-start gap-3">
+									<input
+										class="radio mt-1"
+										type="radio"
+										bind:group={nationMode}
+										value="join"
+									/>
+									<div class="flex-1 min-w-0">
+										<p class="font-semibold mb-2">Join an existing house</p>
+										<div class="nation-list">
+											<button
+												type="button"
+												class="nation-option"
+												class:selected={nationMode === 'join' && selectedNationId === FREE_AGENT_ID}
+												on:click={() => {
+													nationMode = 'join';
+													selectedNationId = FREE_AGENT_ID;
+												}}
+											>
+												<span class="nation-option-name">Free Agent</span>
+											</button>
 											{#each joinNations as nation}
-												<option value={nation.id}>{nation.name}</option>
+												<button
+													type="button"
+													class="nation-option"
+													class:selected={nationMode === 'join' && selectedNationId === nation.id}
+													on:click={() => {
+														nationMode = 'join';
+														selectedNationId = nation.id;
+													}}
+												>
+													<NationTitle
+														name={nation.name}
+														emojis={nation.emojis ?? []}
+														colorScheme={nation.colorScheme}
+													/>
+													{#if nation.captain}
+														<span class="captain-tag">Captain {nation.captain}</span>
+													{/if}
+												</button>
 											{/each}
-										</select>
+										</div>
 										{#if nationMode === 'join' && selectedNationId === FREE_AGENT_ID}
 											<p class="text-sm text-surface-400 mt-2">
-												You will be drafted for one of the pre-existing nations.
+												You will be drafted for one of the pre-existing houses.
 											</p>
 										{/if}
 									</div>
-								</label>
+								</div>
 
-								<label class="flex items-start gap-3 cursor-pointer">
+								<div class="flex items-start gap-3">
 									<input class="radio mt-1" type="radio" bind:group={nationMode} value="create" />
-									<div class="flex-1">
-										<p class="font-semibold">Create your own</p>
+									<div class="flex-1 min-w-0">
+										<p class="font-semibold">Or create your own...</p>
 										<p class="text-sm text-surface-400 mb-2">
-											You will be able to invite others to your nation once submitted.
+											You will be able to invite others to your house once submitted.
 										</p>
 										<input
 											class="input"
 											type="text"
 											bind:value={newNationName}
-											placeholder="Nation name"
+											placeholder="House name"
 											maxlength="40"
 											disabled={nationMode !== 'create'}
 										/>
+										<div class="mt-4 space-y-3">
+											<div>
+												<p class="text-sm font-medium mb-2">Colors</p>
+												<div class="color-swatches">
+													{#each NATION_COLOR_SCHEMES as scheme}
+														<button
+															type="button"
+															class="color-swatch"
+															class:selected={newNationColor === scheme.id}
+															style="background-image: linear-gradient(135deg, {scheme.from}, {scheme.to});"
+															title={scheme.label}
+															aria-label={scheme.label}
+															on:click={() => {
+																nationMode = 'create';
+																newNationColor = scheme.id;
+															}}
+														></button>
+													{/each}
+												</div>
+											</div>
+											<div>
+												<p class="text-sm font-medium mb-2">Emojis</p>
+												<div class="flex gap-2 mb-2">
+													{#each emojiSlots as slot}
+														<div
+															class="emoji-slot"
+															class:selected={emojiSlot === slot}
+														>
+															<input
+																class="emoji-slot-input"
+																value={newNationEmojis[slot]}
+																placeholder="+"
+																maxlength="8"
+																disabled={nationMode !== 'create'}
+																on:focus={() => {
+																	nationMode = 'create';
+																	emojiSlot = slot;
+																}}
+																on:input={(event) => setEmojiFromInput(slot, event)}
+															/>
+														</div>
+													{/each}
+												</div>
+												<div class="emoji-grid">
+													{#each NATION_EMOJI_CHOICES as emoji}
+														<button
+															type="button"
+															class="emoji-choice"
+															on:click={() => {
+																nationMode = 'create';
+																pickEmoji(emoji);
+															}}
+														>
+															{emoji}
+														</button>
+													{/each}
+												</div>
+											</div>
+											<div class="nation-preview">
+												<p class="text-xs text-surface-400 mb-1">Preview</p>
+												<NationTitle
+													name={previewNation.name}
+													emojis={previewNation.emojis}
+													colorScheme={previewNation.colorScheme}
+													size="xl"
+												/>
+											</div>
+										</div>
 									</div>
-								</label>
+								</div>
 							</div>
 						{:else if tabSet === 2}
 							<div class="space-y-6">
@@ -666,7 +855,22 @@
 									it - depending on what works best for everyone.
 								</p>
 
-								<AvailabilityGrid bind:availability />
+								<label class="flex items-start gap-3 max-w-xl mx-auto cursor-pointer signup-panel p-4">
+									<input
+										class="checkbox mt-1"
+										type="checkbox"
+										checked={anyDateWithNotice}
+										on:change={onAnyDateToggle}
+									/>
+									<div>
+										<p class="font-semibold">I'm good with any date, with advance notice</p>
+										<p class="text-sm text-surface-400 mt-1">
+											We'll mark every day as available. You can uncheck this to set specific days again.
+										</p>
+									</div>
+								</label>
+
+								<AvailabilityGrid bind:availability dimmed={anyDateWithNotice} />
 							</div>
 						{:else if tabSet === 4}
 							<div class="space-y-6 max-w-2xl mx-auto">
@@ -770,19 +974,30 @@
 
 								<div class="signup-panel p-5">
 									<div class="flex items-center justify-between mb-3">
-										<h3 class="font-bold">Nation</h3>
+										<h3 class="font-bold">House</h3>
 										<button type="button" class="btn btn-sm variant-ghost-surface" on:click={() => (tabSet = 1)}>
 											Change
 										</button>
 									</div>
-									<p class="text-xl font-semibold">{selectedNationName || '—'}</p>
+									<NationTitle
+										name={selectedNationName || '—'}
+										emojis={nationMode === 'create'
+											? newNationEmojis.filter(Boolean)
+											: selectedNation?.emojis ?? []}
+										colorScheme={nationMode === 'create'
+											? newNationColor
+											: selectedNation?.colorScheme}
+										size="xl"
+									/>
 									<p class="text-sm text-surface-400 mt-1">
 										{#if nationMode === 'create'}
-											Creating a new nation
+											Creating a new house — you'll be captain
 										{:else if selectedNationId === FREE_AGENT_ID}
 											Signing up as a Free Agent
+										{:else if selectedNation?.captain}
+											Joining {selectedNationName} (Captain: {selectedNation.captain})
 										{:else}
-											Joining an existing nation
+											Joining an existing house
 										{/if}
 									</p>
 								</div>
@@ -812,11 +1027,17 @@
 											Change
 										</button>
 									</div>
-									<p class="text-surface-300 mb-4">
-										{counts.available} available · {counts.tentative} tentative · {counts.unavailable} not
-										available
-									</p>
-									<AvailabilityGrid bind:availability readonly />
+									{#if anyDateWithNotice}
+										<p class="text-surface-300 mb-4">
+											Any date, with advance notice — every day is marked available.
+										</p>
+									{:else}
+										<p class="text-surface-300 mb-4">
+											{counts.available} available · {counts.tentative} tentative · {counts.unavailable} not
+											available
+										</p>
+									{/if}
+									<AvailabilityGrid bind:availability readonly dimmed={anyDateWithNotice} />
 								</div>
 
 								<div class="signup-panel p-5">
@@ -884,5 +1105,131 @@
 		border: 1px solid rgb(148 163 184 / 0.16);
 		backdrop-filter: blur(12px);
 		border-radius: 1rem;
+	}
+
+	.nation-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.nation-option {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		width: 100%;
+		padding: 0.7rem 0.9rem;
+		text-align: left;
+		border-radius: 0.75rem;
+		border: 1px solid rgb(148 163 184 / 0.18);
+		background: rgb(15 23 42 / 0.4);
+		color: inherit;
+		transition:
+			border-color 120ms ease,
+			background-color 120ms ease;
+	}
+
+	.nation-option:hover {
+		border-color: rgb(244 114 182 / 0.45);
+		background: rgb(15 23 42 / 0.62);
+	}
+
+	.nation-option.selected {
+		border-color: rgb(244 114 182 / 0.95);
+		background: rgb(244 114 182 / 0.12);
+	}
+
+	.nation-option-name {
+		font-weight: 600;
+		line-height: 1.3;
+	}
+
+	.captain-tag {
+		flex-shrink: 0;
+		font-size: 0.72rem;
+		font-weight: 500;
+		letter-spacing: 0.02em;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		background: rgb(148 163 184 / 0.18);
+		color: rgb(203 213 225);
+	}
+
+	.color-swatches {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.color-swatch {
+		width: 1.85rem;
+		height: 1.85rem;
+		border-radius: 999px;
+		border: 2px solid rgb(148 163 184 / 0.25);
+		padding: 0;
+		cursor: pointer;
+	}
+
+	.color-swatch.selected {
+		border-color: white;
+		box-shadow: 0 0 0 2px rgb(244 114 182 / 0.9);
+	}
+
+	.emoji-slot {
+		width: 2.6rem;
+		height: 2.6rem;
+		border-radius: 0.7rem;
+		border: 1px solid rgb(148 163 184 / 0.22);
+		background: rgb(15 23 42 / 0.45);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.emoji-slot.selected {
+		border-color: rgb(244 114 182 / 0.9);
+	}
+
+	.emoji-slot-input {
+		width: 100%;
+		height: 100%;
+		border: 0;
+		background: transparent;
+		text-align: center;
+		font-size: 1.15rem;
+		color: inherit;
+	}
+
+	.emoji-slot-input:focus {
+		outline: none;
+	}
+
+	.emoji-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
+
+	.emoji-choice {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 0.5rem;
+		border: 1px solid rgb(148 163 184 / 0.16);
+		background: rgb(15 23 42 / 0.35);
+		font-size: 1.05rem;
+		line-height: 1;
+	}
+
+	.emoji-choice:hover {
+		border-color: rgb(244 114 182 / 0.5);
+		background: rgb(15 23 42 / 0.6);
+	}
+
+	.nation-preview {
+		padding: 0.75rem 0.9rem;
+		border-radius: 0.75rem;
+		border: 1px dashed rgb(148 163 184 / 0.28);
+		background: rgb(15 23 42 / 0.28);
 	}
 </style>
