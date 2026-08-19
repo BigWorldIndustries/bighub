@@ -8,6 +8,7 @@ declare namespace App {
 			username: string;
 			avatar: string | null;
 		};
+		inBigWorld?: boolean;
 	}
 	// interface PageData {}
 	// interface Error {}

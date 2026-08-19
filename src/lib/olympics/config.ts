@@ -1,5 +1,6 @@
 export const OLYMPICS_FORM_ID = 'olympics-2026';
 export const DISCORD_INVITE_URL = 'https://discord.gg/RfbyhH9FZc';
+export const BIG_WORLD_GUILD_ID = '618468327404339220';
 export const FREE_AGENT_ID = 'free-agent';
 export const KOFI_PAGE_URL = 'https://ko-fi.com/bigworld';
 export const KOFI_USERNAME = 'bigworld';

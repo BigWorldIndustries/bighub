@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onDestroy, onMount } from 'svelte';
 	import { Avatar, TabGroup, Tab } from '@skeletonlabs/skeleton';
+	import { IconBrandDiscordFilled } from '@tabler/icons-svelte';
 	import GameBanner from '$lib/components/olympics/GameBanner.svelte';
 	import AvailabilityGrid from '$lib/components/olympics/AvailabilityGrid.svelte';
 	import {
@@ -31,6 +32,8 @@
 
 	export let data: {
 		user: { id: string; username: string; avatar: string | null };
+		inBigWorld: boolean;
+		previewGate: boolean;
 		existingSubmission: OlympicsSubmission | null;
 		nations: OlympicsNation[];
 		suggestedGames: OlympicsSuggestedGame[];
@@ -281,6 +284,7 @@
 
 	onMount(() => {
 		pollTimer = setInterval(() => {
+			if (data.previewGate || (!data.inBigWorld && !data.existingSubmission)) return;
 			const status = data.existingSubmission?.form_data?.paymentStatus;
 			if (!showForm && status === 'pending') {
 				void invalidateAll();
@@ -315,7 +319,61 @@
 		</div>
 	</div>
 
-	{#if data.existingSubmission && !showForm}
+	{#if data.previewGate || (!data.inBigWorld && !data.existingSubmission)}
+		<div class="py-2 max-w-2xl mx-auto">
+			{#if data.previewGate}
+				<p class="text-center text-sm text-amber-300 mb-4">
+					Preview of the membership step.
+					<a href="/olympics/signup" class="underline">Exit preview</a>
+				</p>
+			{/if}
+			<h1 class="text-3xl font-bold mb-2 text-center">Join Big World</h1>
+			<p class="text-center text-surface-300 mb-6">Step 0 of sign-up</p>
+
+			<div class="signup-panel p-6 space-y-5">
+				<p class="text-center text-surface-200">
+					The Big World Olympics will take place in the Big World discord server. Join the server,
+					then come back — we'll unlock the form once you're in.
+				</p>
+				<ol class="space-y-3 text-surface-200 max-w-md mx-auto">
+					<li class="flex gap-3">
+						<span
+							class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 text-white font-bold flex items-center justify-center"
+							>1</span
+						>
+						<span class="pt-1">Join the Big World server with the invite below.</span>
+					</li>
+					<li class="flex gap-3">
+						<span
+							class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 text-white font-bold flex items-center justify-center"
+							>2</span
+						>
+						<span class="pt-1">Come back and log in again. We'll check Discord membership.</span>
+					</li>
+				</ol>
+				<div class="flex flex-wrap justify-center gap-3 pt-2">
+					<a
+						href={DISCORD_INVITE_URL}
+						target="_blank"
+						rel="noreferrer"
+						class="btn variant-filled-primary"
+					>
+						<IconBrandDiscordFilled class="w-5 h-5" />
+						Join Big World
+					</a>
+					<a
+						href="/api/auth/discord?returnTo=/olympics/signup"
+						class="btn variant-ghost-surface"
+					>
+						I've joined - login again
+					</a>
+				</div>
+				<p class="text-center text-sm text-surface-400">
+					If Discord asks you to authorize again, that's us refreshing server membership.
+				</p>
+			</div>
+		</div>
+	{:else if data.existingSubmission && !showForm}
 		{@const form = data.existingSubmission.form_data}
 		{@const counts = availabilityCounts(form)}
 		{@const paid = form.paymentStatus === 'paid'}

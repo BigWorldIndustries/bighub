@@ -32,7 +32,7 @@ export const GET = async ({ cookies, url }: any) => {
 		client_id: DISCORD_CLIENT_ID,
 		redirect_uri: redirectUri,
 		response_type: 'code',
-		scope: 'identify',
+		scope: 'identify guilds',
 		state
 	});
 

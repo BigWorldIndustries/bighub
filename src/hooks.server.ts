@@ -9,6 +9,7 @@ interface SessionData {
 		username: string;
 		avatar: string | null;
 	};
+	inBigWorld?: boolean;
 	expiresAt: number;
 }
 
@@ -87,6 +88,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const sessionData = verifyAndDecodeSession(sessionCookie);
 		if (sessionData) {
 			event.locals.discordUser = sessionData.discordUser;
+			event.locals.inBigWorld = sessionData.inBigWorld;
 		}
 	}
 
