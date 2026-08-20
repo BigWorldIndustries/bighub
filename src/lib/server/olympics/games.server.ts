@@ -1,10 +1,30 @@
 import { FieldValue, type Firestore, type Transaction } from 'firebase-admin/firestore';
 import { OLYMPICS_FORM_ID, slugifyNationName } from '$lib/olympics/config';
-import { GAME_IDS, SUGGESTED_GAME_MAX_LENGTH } from '$lib/olympics/games';
+import { GAME_IDS, SUGGESTED_GAME_MAX_LENGTH, isBadgeId, type BadgeId } from '$lib/olympics/games';
 import type { OlympicsSuggestedGame } from '$lib/olympics/types';
 
 export function suggestedGamesCollection(db: Firestore) {
 	return db.collection('forms').doc(OLYMPICS_FORM_ID).collection('suggestedGames');
+}
+
+function parseImageUrl(value: unknown): string | undefined {
+	if (typeof value !== 'string') return undefined;
+	const url = value.trim();
+	if (url.length < 8 || url.length > 2000) return undefined;
+	if (!/^https?:\/\//i.test(url)) return undefined;
+	return url;
+}
+
+function parseBadges(value: unknown): BadgeId[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	return value.filter(isBadgeId);
+}
+
+function parseNote(value: unknown): string | undefined {
+	if (typeof value !== 'string') return undefined;
+	const note = value.trim();
+	if (!note) return undefined;
+	return note.slice(0, 160);
 }
 
 export async function listOlympicsSuggestedGames(db: Firestore): Promise<OlympicsSuggestedGame[]> {
@@ -12,11 +32,17 @@ export async function listOlympicsSuggestedGames(db: Firestore): Promise<Olympic
 	return snapshot.docs
 		.map((doc) => {
 			const data = doc.data();
+			const badges = parseBadges(data.badges);
+			const imageUrl = parseImageUrl(data.imageUrl);
+			const note = parseNote(data.note);
 			return {
 				id: doc.id,
 				title: typeof data.name === 'string' && data.name.trim() ? data.name.trim() : doc.id,
 				createdBy: typeof data.createdBy === 'string' ? data.createdBy : undefined,
-				hidden: Boolean(data.hidden)
+				hidden: Boolean(data.hidden),
+				...(badges ? { badges } : {}),
+				...(imageUrl ? { imageUrl } : {}),
+				...(note ? { note } : {})
 			};
 		})
 		.sort((a, b) => a.title.localeCompare(b.title));
@@ -123,7 +149,8 @@ export function writeNewSuggestedGames(
 			name: item.game.title,
 			createdBy: userId,
 			createdAt: FieldValue.serverTimestamp(),
-			hidden: false
+			hidden: false,
+			badges: ['suggested']
 		});
 	}
 }

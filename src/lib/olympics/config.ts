@@ -4,7 +4,6 @@ export const BIG_WORLD_GUILD_ID = '618468327404339220';
 export const FREE_AGENT_ID = 'free-agent';
 export const KOFI_PAGE_URL = 'https://ko-fi.com/bigworld';
 export const KOFI_USERNAME = 'bigworld';
-export const MIN_ENTRY_FEE = 5;
 export const PAYMENT_CODE_RE = /\bBWO-[A-HJ-NP-Z2-9]{4}\b/i;
 const PAYMENT_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 

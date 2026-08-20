@@ -21,7 +21,8 @@ export const NATION_SIGNUP_ANNOUNCEMENTS = [
 	'**A CHALLENGER ENTERS THE GAMES** ⚔️🏆\n{mention} has claimed their place under the banner of **{nation}**.',
 	'**THE ARENA GROWS LOUDER** 🏟️\n{mention} has answered the call of the Big World Olympics, representing **{nation}**.',
 	'**LET THE RECORD SHOW** 📜\n{mention} has inscribed their name for **{nation}** in the Big World Olympics.',
-	'**THE TORCH PASSES ON** 🔥\n{mention} flies the colors of **{nation}** and enters the Big World Olympics.'
+	'**THE TORCH PASSES ON** 🔥\n{mention} flies the colors of **{nation}** and enters the Big World Olympics.',
+	'**YOUR BANNER IS RAISED** 🚩\n{mention} has successfully entered the Big World Olympics under the banner of **{nation}**.'
 ];
 
 /** Free-agent lines — they are unbound, not representing a house called "Free Agent". */
@@ -31,7 +32,8 @@ export const FREE_AGENT_SIGNUP_ANNOUNCEMENTS = [
 	'**A CHALLENGER ENTERS THE GAMES** ⚔️🏆\n{mention} walks into the arena with no house at their back, a free agent.',
 	'**THE ARENA GROWS LOUDER** 🏟️\n{mention} has answered the call of the Big World Olympics as a free agent.',
 	'**LET THE RECORD SHOW** 📜\n{mention} has inscribed their name for the Big World Olympics, competing as a free agent.',
-	'**THE TORCH PASSES ON** 🔥\n{mention} enters the Big World Olympics unclaimed, a free agent among the houses.'
+	'**THE TORCH PASSES ON** 🔥\n{mention} enters the Big World Olympics unclaimed, a free agent among the houses.',
+	'**YOUR BANNER IS RAISED** 🚩\n{mention} has successfully entered the Big World Olympics as a free agent among the houses.'
 ];
 
 export function formatPrizeAmount(amount: number | undefined, raw?: string): string {

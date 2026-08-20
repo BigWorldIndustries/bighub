@@ -1,20 +1,29 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onDestroy, onMount } from 'svelte';
 	import { Avatar, TabGroup, Tab } from '@skeletonlabs/skeleton';
 	import { IconBrandDiscordFilled } from '@tabler/icons-svelte';
 	import GameBanner from '$lib/components/olympics/GameBanner.svelte';
 	import AvailabilityGrid from '$lib/components/olympics/AvailabilityGrid.svelte';
+	import XpProgress from '$lib/components/olympics/XpProgress.svelte';
 	import {
 		DISCORD_INVITE_URL,
 		FREE_AGENT_ID,
 		KOFI_PAGE_URL,
 		KOFI_USERNAME,
-		MIN_ENTRY_FEE,
 		OLYMPICS_FORM_ID,
 		slugifyNationName,
 		type AvailabilityStatus
 	} from '$lib/olympics/config';
+	import {
+		OLYMPICS_TIERS,
+		XP_PER_REFERRAL,
+		nextTier,
+		normalizeReferralUsername,
+		referralSignupPath,
+		withDerivedXp
+	} from '$lib/olympics/tiers';
 	import {
 		DEFAULT_NATION_COLOR,
 		NATION_COLOR_SCHEMES,
@@ -23,6 +32,8 @@
 		type NationColorId
 	} from '$lib/olympics/nationStyle';
 	import NationTitle from '$lib/components/olympics/NationTitle.svelte';
+	import TierTitle from '$lib/components/olympics/TierTitle.svelte';
+	import FeaturedPerk from '$lib/components/olympics/FeaturedPerk.svelte';
 	import { allDaysAvailable, defaultAvailability } from '$lib/olympics/dates';
 	import {
 		GAME_IDS,
@@ -30,11 +41,13 @@
 		SUGGESTED_GAME_MAX_LENGTH,
 		asSuggestedGame,
 		compareGamesByPopularity,
+		overlayOfficialGame,
 		type OlympicsGame
 	} from '$lib/olympics/games';
 	import type {
 		OlympicsFormData,
 		OlympicsNation,
+		OlympicsReferrerPreview,
 		OlympicsSubmission,
 		OlympicsSuggestedGame
 	} from '$lib/olympics/types';
@@ -43,14 +56,16 @@
 		user: { id: string; username: string; avatar: string | null };
 		inBigWorld: boolean;
 		previewGate: boolean;
+		discordReturnTo: string;
 		existingSubmission: OlympicsSubmission | null;
+		referrerPreview: OlympicsReferrerPreview | null;
 		nations: OlympicsNation[];
 		suggestedGames: OlympicsSuggestedGame[];
 		signupCounts: Record<string, number>;
 	};
 
 	const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	const TAB_LABELS = ['Contact', 'Allegiance', 'Events', 'Availability', 'Payment', 'Review'];
+	const TAB_LABELS = ['Contact', 'Allegiance', 'Events', 'Availability', 'Tiers', 'Review'];
 
 	let tabSet = 0;
 	let email = '';
@@ -73,12 +88,16 @@
 	let errorMessage = '';
 	let showForm = !data.existingSubmission;
 	let copiedCode = false;
+	let copiedLink = false;
+	let referredByUsername = '';
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 	function applySubmission(submission: OlympicsSubmission | null) {
 		const form = submission?.form_data;
 		email = form?.email ?? '';
 		phone = form?.phone ?? '';
+		referredByUsername =
+			form?.referredByUsername ?? data.referrerPreview?.username ?? '';
 		selectedGames = form?.games ? [...form.games] : [];
 		availability = { ...defaultAvailability(), ...(form?.availability ?? {}) };
 		anyDateWithNotice = Boolean(form?.anyDateWithNotice);
@@ -108,18 +127,39 @@
 
 	applySubmission(data.existingSubmission);
 
-	$: joinNations = data.nations.filter((nation) => nation.id !== FREE_AGENT_ID);
+	$: referralLocked = Boolean(data.existingSubmission);
+	$: referrerNationId = data.referrerPreview?.nationId;
+	$: joinNations = data.nations
+		.filter((nation) => nation.id !== FREE_AGENT_ID)
+		.slice()
+		.sort((a, b) => {
+			if (referrerNationId && a.id === referrerNationId) return -1;
+			if (referrerNationId && b.id === referrerNationId) return 1;
+			return 0;
+		});
+	$: referralLink = `${$page.url.origin}${referralSignupPath(data.user.username)}`;
+	$: isSelfReferral =
+		normalizeReferralUsername(referredByUsername).toLowerCase() ===
+		data.user.username.toLowerCase();
 	$: contactValid = !email || EMAIL_RE.test(email);
 	$: nationValid =
 		nationMode === 'create' ? newNationName.trim().length >= 2 : Boolean(selectedNationId);
 	$: eventsValid = selectedGames.length >= 1;
+	$: overlaysById = new Map((data.suggestedGames ?? []).map((game) => [game.id, game]));
+	$: officialGames = OLYMPICS_GAMES.map((game) => overlayOfficialGame(game, overlaysById.get(game.id)));
 	$: catalogSuggestions = (data.suggestedGames ?? [])
 		.filter((game) => !GAME_IDS.has(game.id) && (!game.hidden || selectedGames.includes(game.id)))
-		.map((game) => asSuggestedGame(game.id, game.title));
+		.map((game) =>
+			asSuggestedGame(game.id, game.title, {
+				badges: game.badges,
+				note: game.note,
+				imageUrl: game.imageUrl
+			})
+		);
 	$: sessionSuggestions = localSuggestions.filter(
 		(game) => !GAME_IDS.has(game.id) && !catalogSuggestions.some((existing) => existing.id === game.id)
 	);
-	$: pickerGames = [...OLYMPICS_GAMES, ...catalogSuggestions, ...sessionSuggestions].sort((a, b) =>
+	$: pickerGames = [...officialGames, ...catalogSuggestions, ...sessionSuggestions].sort((a, b) =>
 		compareGamesByPopularity(a, b, data.signupCounts ?? {})
 	);
 	$: selectedNation = data.nations.find((nation) => nation.id === selectedNationId);
@@ -258,19 +298,33 @@
 		return OLYMPICS_GAMES.find((game) => game.id === id)?.title ?? id;
 	}
 
-	function formatUsd(amount: number): string {
-		if (!Number.isFinite(amount)) return '$—';
-		return `$${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)}`;
+	async function copyText(value: string, kind: 'code' | 'link') {
+		try {
+			await navigator.clipboard.writeText(value);
+			if (kind === 'code') {
+				copiedCode = true;
+				setTimeout(() => (copiedCode = false), 2000);
+			} else {
+				copiedLink = true;
+				setTimeout(() => (copiedLink = false), 2000);
+			}
+		} catch {
+			if (kind === 'code') copiedCode = false;
+			else copiedLink = false;
+		}
 	}
 
-	async function copyPaymentCode(code: string) {
-		try {
-			await navigator.clipboard.writeText(code);
-			copiedCode = true;
-			setTimeout(() => (copiedCode = false), 2000);
-		} catch {
-			copiedCode = false;
-		}
+	function scrollToId(id: string) {
+		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
+	async function goRefer() {
+		await copyText(referralLink, 'link');
+		scrollToId('earn-refer');
+	}
+
+	function goDonate() {
+		scrollToId('earn-donate');
 	}
 
 	function setAnyDateWithNotice(checked: boolean) {
@@ -323,8 +377,11 @@
 				games: selectedGames,
 				availability,
 				anyDateWithNotice,
-				entryAmount: MIN_ENTRY_FEE,
-				paymentStatus: 'pending'
+				entryAmount: 0,
+				paymentStatus: 'pending',
+				...(!referralLocked && !isSelfReferral
+					? { referredByUsername: normalizeReferralUsername(referredByUsername) || undefined }
+					: {})
 			};
 
 			const response = await fetch('/api/forms', {
@@ -356,8 +413,7 @@
 	onMount(() => {
 		pollTimer = setInterval(() => {
 			if (data.previewGate || (!data.inBigWorld && !data.existingSubmission)) return;
-			const status = data.existingSubmission?.form_data?.paymentStatus;
-			if (!showForm && status === 'pending') {
+			if (!showForm && data.existingSubmission) {
 				void invalidateAll();
 			}
 		}, 4000);
@@ -433,7 +489,7 @@
 						Join Big World
 					</a>
 					<a
-						href="/api/auth/discord?returnTo=/olympics/signup"
+						href={data.discordReturnTo}
 						class="btn variant-ghost-surface"
 					>
 						I've joined - login again
@@ -447,51 +503,23 @@
 	{:else if data.existingSubmission && !showForm}
 		{@const form = data.existingSubmission.form_data}
 		{@const counts = availabilityCounts(form)}
-		{@const paid = form.paymentStatus === 'paid'}
 		{@const nationCaptain = data.nations.find((nation) => nation.id === form.nationId)?.captain}
+		{@const derived = withDerivedXp(form)}
+		{@const upcomingTier = nextTier(derived.xp)}
 		<div class="py-2">
-			<h1 class="text-3xl font-bold mb-2 text-center">
-				{paid ? 'Sign-up complete' : 'One last step to complete your sign-up'}
-			</h1>
-			<p class="text-center text-surface-300 mb-6">
-				{#if paid}
-					You're in for Big World Olympics 2026. You can update your details any time.
-				{:else}
-					Your details are saved. Pay the ${MIN_ENTRY_FEE} minimum entry fee on Ko-fi to finish.
-				{/if}
+			<p class="text-center text-sm uppercase tracking-[0.2em] text-success-400 mb-2">
+				Raise the Banners!
 			</p>
-
-			<div class="signup-panel p-5 mb-6 max-w-2xl mx-auto flex items-center gap-4">
-				{#if paid}
-					<span
-						class="flex-shrink-0 w-12 h-12 rounded-full bg-success-500 text-white text-2xl font-bold flex items-center justify-center"
-						aria-hidden="true"
-					>
-						✓
-					</span>
-				{:else}
-					<span
-						class="flex-shrink-0 w-12 h-12 rounded-full bg-error-500 text-white text-2xl font-bold flex items-center justify-center"
-						aria-hidden="true"
-					>
-						✕
-					</span>
-				{/if}
-				<div>
-					<p class="text-sm text-surface-400">Entry fee</p>
-					{#if paid}
-						<p class="text-xl font-bold text-success-400">
-							Paid {formatUsd(form.paidAmount ?? MIN_ENTRY_FEE)}
-						</p>
-					{:else}
-						<p class="text-lg text-surface-200">
-							Still awaiting ${MIN_ENTRY_FEE} entry fee on Ko-fi
-						</p>
-					{/if}
-				</div>
+			<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-6">
+				<p class="text-surface-300 text-center sm:text-left">
+					You are locked in for the Big World Olympics 2026. You may edit your details any time before the games begin.
+				</p>
+				<button type="button" class="btn btn-sm variant-ghost-surface" on:click={startEdit}>
+					Edit sign-up
+				</button>
 			</div>
 
-			<div class="grid md:grid-cols-2 gap-4 mb-8">
+			<div class="grid md:grid-cols-2 gap-4 mb-4">
 				<div class="signup-panel p-5">
 					<p class="text-sm text-surface-400 mb-1">House</p>
 					<NationTitle
@@ -521,46 +549,126 @@
 				<div class="signup-panel p-5">
 					<p class="text-sm text-surface-400 mb-1">Submitted</p>
 					<p>{formatSubmittedAt(data.existingSubmission) || 'Just now'}</p>
+					{#if form.referredByUsername}
+						<p class="text-sm text-surface-400 mt-2">Referred by {form.referredByUsername}</p>
+					{/if}
 				</div>
 			</div>
 
-			{#if !paid}
-				<div class="signup-panel p-6 mb-8 max-w-2xl mx-auto">
-					<h2 class="text-xl font-bold mb-2 text-center">Pay your entry fee</h2>
-					<p class="text-center text-surface-300 mb-4">
-						Minimum ${MIN_ENTRY_FEE}. Extra support is welcome and goes to the prize pool. Paste this
-						code in the Ko-fi message box so we can match your signup:
-					</p>
-					<p class="text-center text-3xl font-bold tracking-widest mb-4">{form.paymentCode}</p>
-					<div class="flex flex-wrap justify-center gap-2 mb-4">
-						<button
-							type="button"
-							class="btn variant-filled-success"
-							on:click={() => form.paymentCode && copyPaymentCode(form.paymentCode)}
-						>
-							{copiedCode ? 'Copied!' : 'Copy code'}
-						</button>
-						<a href={KOFI_PAGE_URL} target="_blank" rel="noreferrer" class="btn variant-ghost-surface">
-							Open Ko-fi
-						</a>
-					</div>
-					<p class="text-center text-sm text-surface-400 mb-4">
-						This page updates automatically when payment is confirmed.
-					</p>
-					<iframe
-						id="kofiframe"
-						src="https://ko-fi.com/{KOFI_USERNAME}/?hidefeed=true&widget=true&embed=true"
-						title="Support Big World on Ko-fi"
-						class="w-full rounded-xl bg-transparent"
-						style="border: none; height: 712px;"
-					></iframe>
-				</div>
-			{/if}
+			<h1 class="text-3xl sm:text-4xl font-bold mb-3 text-center">Earn XP</h1>
+			<p class="text-center text-surface-300 max-w-xl mx-auto mb-6">
+				{#if upcomingTier}
+					Sign-up is the starting line. {upcomingTier.name} is {upcomingTier.tagline} —
+					{upcomingTier.shortPerks.join(', ').toLowerCase()}.
+				{:else}
+					You're at the current top tier. Extra donations still feed the prize pool, and more tiers
+					are coming.
+				{/if}
+			</p>
 
-			<div class="flex justify-center">
-				<button type="button" on:click={startEdit} class="btn variant-filled-primary">
-					Edit sign-up
+			<div class="earn-cta-grid max-w-2xl mx-auto mb-8">
+				<button type="button" class="earn-cta refer" on:click={goRefer}>
+					<span class="earn-cta-kicker">2,500 XP each</span>
+					<span class="earn-cta-title">Refer a Friend</span>
+					<span class="earn-cta-copy">Share your link. When they submit, you climb.</span>
 				</button>
+				<button type="button" class="earn-cta donate" on:click={goDonate}>
+					<span class="earn-csuta-kicker">$1 = 1,000 XP</span>
+					<span class="earn-cta-title">Donate</span>
+					<span class="earn-cta-copy">
+						{#if upcomingTier?.id === 'citizen'}
+							$5 unlocks Citizen — gifted games, raffles, medals.
+						{:else if upcomingTier?.id === 'protagonist'}
+							$10 puts you in the 2026 card set, mailed to you.
+						{:else}
+							Every dollar boosts the prize pool and your XP.
+						{/if}
+					</span>
+				</button>
+			</div>
+
+			<div class="max-w-2xl mx-auto mb-6">
+				<XpProgress {form} />
+			</div>
+
+			<div class="signup-panel p-5 mb-6 max-w-2xl mx-auto space-y-4">
+				<h2 class="text-lg font-bold text-center">What you unlock</h2>
+				<ul class="space-y-3">
+					{#each OLYMPICS_TIERS as tier}
+						<li class="flex gap-3 items-start" class:opacity-40={tier.xp > derived.xp}>
+							<div class="min-w-0">
+								<TierTitle id={tier.id} name={tier.name} size="md" />
+								<p class="text-sm text-surface-400">
+									{tier.shortPerks.join(' · ')}
+								</p>
+							</div>
+						</li>
+					{/each}
+				</ul>
+				<p class="text-sm text-center text-surface-400">
+					<a href="/olympics" class="underline hover:text-primary-300">
+						Check out what was given out last Olympics.
+					</a>
+				</p>
+			</div>
+
+			<div id="earn-refer" class="signup-panel p-5 mb-6 max-w-2xl mx-auto space-y-3 scroll-mt-8">
+				<p class="text-sm uppercase tracking-wide text-primary-300">Refer a friend</p>
+				<h2 class="text-xl font-bold">Recruit Your Allies and get 2,500 XP</h2>
+				<p class="text-surface-300">
+					Send this to someone who hasn't signed up yet. The moment they complete the form, you get
+					credited — no donation required on their end.
+				</p>
+				<div class="flex gap-2 items-stretch">
+					<input class="input font-medium" type="text" readonly value={referralLink} />
+					<button
+						type="button"
+						class="btn variant-filled-primary flex-shrink-0"
+						on:click={() => copyText(referralLink, 'link')}
+					>
+						{copiedLink ? 'Copied!' : 'Copy'}
+					</button>
+				</div>
+			</div>
+
+			<div id="earn-donate" class="signup-panel p-6 mb-8 max-w-2xl mx-auto scroll-mt-8">
+				<p class="text-sm uppercase tracking-wide text-warning-400 text-center mb-1">Donate</p>
+				<h2 class="text-2xl font-bold mb-2 text-center">Turn support into a higher tier</h2>
+				<p class="text-center text-surface-300 mb-4">
+					{#if upcomingTier?.id === 'citizen'}
+						$5 is Citizen. Gifted games, raffles, giveaways, and medals for top 3. Anything extra
+						keeps stacking XP and feeds the prize pool.
+					{:else if upcomingTier?.id === 'protagonist'}
+						$10 is Protagonist — custom artwork in the 2026 trading card set, plus a holographic
+						card and booster mailed to you. Extra still goes to prizes.
+					{:else}
+						Every dollar is 1,000 XP and goes to the Big World Olympics prize pool.
+					{/if}
+					Paste this code in the Ko-fi message so we can match it to you:
+				</p>
+				<p class="text-center text-3xl font-bold tracking-widest mb-4">{form.paymentCode}</p>
+				<div class="flex flex-wrap justify-center gap-2 mb-4">
+					<button
+						type="button"
+						class="btn variant-filled-success"
+						on:click={() => form.paymentCode && copyText(form.paymentCode, 'code')}
+					>
+						{copiedCode ? 'Copied!' : 'Copy code'}
+					</button>
+					<a href={KOFI_PAGE_URL} target="_blank" rel="noreferrer" class="btn variant-ghost-surface">
+						Open Ko-fi
+					</a>
+				</div>
+				<p class="text-center text-sm text-surface-400 mb-4">
+					This page updates automatically when a donation is confirmed.
+				</p>
+				<iframe
+					id="kofiframe"
+					src="https://ko-fi.com/{KOFI_USERNAME}/?hidefeed=true&widget=true&embed=true"
+					title="Support Big World on Ko-fi"
+					class="w-full rounded-xl bg-transparent"
+					style="border: none; height: 712px;"
+				></iframe>
 			</div>
 		</div>
 	{:else}
@@ -596,11 +704,8 @@
 							<div class="space-y-6 max-w-2xl mx-auto">
 								<p class="text-lg text-surface-200 leading-relaxed">
 									Big World Olympics is a multi-week-long online gaming event where you can participate as
-									much or as little as you want. All participants get free games and merch, and winners get
-									prizes.
-								</p>
-								<p class="text-lg">
-									A <strong>${MIN_ENTRY_FEE}</strong> minimum entry fee is required to complete sign-up.
+									much or as little as you want. Sign-up is free. Donate or refer friends after you submit
+									to unlock higher tiers.
 								</p>
 								<p class="text-surface-200">
 									Games will be hosted in the Big World Discord server.
@@ -628,6 +733,33 @@
 									<span>Phone <span class="text-surface-400">(optional)</span></span>
 									<input class="input" type="tel" bind:value={phone} placeholder="Optional" />
 								</label>
+
+								<label class="label">
+									<span>
+										Who referred you?
+										<span class="text-surface-400">{referralLocked ? '' : '(optional)'}</span>
+									</span>
+									<input
+										class="input"
+										type="text"
+										bind:value={referredByUsername}
+										placeholder="Discord username"
+										maxlength="32"
+										disabled={referralLocked}
+									/>
+								</label>
+								{#if referralLocked}
+									<p class="text-sm text-surface-400">
+										Your referrer is locked from your first submit and cannot be changed.
+									</p>
+								{:else if isSelfReferral}
+									<p class="text-warning-500 text-sm">You can't refer yourself — this will be ignored.</p>
+								{:else}
+									<p class="text-sm text-surface-400">
+										If a friend sent you here, enter their Discord username. This is saved when you first
+										submit and cannot be changed later.
+									</p>
+								{/if}
 
 								{#if email && !contactValid}
 									<p class="text-warning-500 text-sm">Please enter a valid email address.</p>
@@ -678,9 +810,14 @@
 														emojis={nation.emojis ?? []}
 														colorScheme={nation.colorScheme}
 													/>
-													{#if nation.captain}
-														<span class="captain-tag">Captain {nation.captain}</span>
-													{/if}
+													<div class="nation-option-meta">
+														{#if referrerNationId && nation.id === referrerNationId}
+															<span class="referrer-badge">Your referrer's nation</span>
+														{/if}
+														{#if nation.captain}
+															<span class="captain-tag">Captain {nation.captain}</span>
+														{/if}
+													</div>
 												</button>
 											{/each}
 										</div>
@@ -870,76 +1007,70 @@
 									</div>
 								</label>
 
+								<p class="text-warning-400 max-w-3xl mx-auto text-center leading-relaxed">
+									Heads Up: This is based on the next few weeks. If timing doesn't work out, we may
+									reschedule the games for further out.
+								</p>
+
 								<AvailabilityGrid bind:availability dimmed={anyDateWithNotice} />
 							</div>
 						{:else if tabSet === 4}
 							<div class="space-y-6 max-w-2xl mx-auto">
-								<h2 class="text-2xl font-bold text-center">Payment</h2>
-								<p class="text-xl text-center">
-									Required entry fee: <strong>${MIN_ENTRY_FEE}</strong>
-								</p>
+								<h2 class="text-2xl font-bold text-center">Tiers</h2>
 								<p class="text-center text-surface-300">
-									Payment is required to complete your sign-up. After you submit your details, you'll
-									pay on Ko-fi (minimum ${MIN_ENTRY_FEE}). Anything extra is optional and goes to the
-									prize pool.
+									Everyone can enter free. Donate after you submit, or refer friends, to unlock higher
+									tiers. $1 = 1,000 XP. Each completed referral is {XP_PER_REFERRAL.toLocaleString('en-US')} XP.
 								</p>
 								<p class="text-sm text-center text-surface-400">
-									All money will go towards the Big World Olympics events and prize pool.
+									Donations are matched on Ko-fi after sign-up using your personal payment code. All money
+									goes towards Big World Olympics events and the prize pool.
 								</p>
 
-								<div class="signup-panel p-5 space-y-3">
-									<h3 class="font-bold">Guaranteed with your entry fee</h3>
-									<ul class="space-y-4 text-surface-200">
-										<li>
-											<p class="font-semibold">Big World Merch</p>
-											<p class="text-sm text-surface-400 mt-1">
-												<a href="/olympics" class="underline hover:text-primary-300">
-													Check out what was given out last Olympics.
-												</a>
-											</p>
-											<ul class="list-disc ml-6 mt-2 space-y-2 text-surface-300">
-												<li>
-													1 Big World Olympics 2026 sealed booster pack (10-15 cards)
-													<span class="block text-sm text-surface-400 mt-1">
-														Shipped directly to you, provided you participate in at least one event and provide a
-														mailing address.
-													</span>
-												</li>
-												<li>1 custom-made Big World holographic card representing you</li>
-											</ul>
-										</li>
-										<li>
-											<p class="font-semibold">Gifted Games</p>
-											<p class="text-sm text-surface-400 mt-1">
-												In events you participate in that are marked as "Gifted Games" eligible.
-											</p>
-										</li>
-									</ul>
-								</div>
+								{#each OLYMPICS_TIERS as tier}
+									<div class="signup-panel p-5 space-y-3">
+										<div class="flex items-baseline justify-between gap-3">
+											<h3>
+												<TierTitle id={tier.id} name={tier.name} size="xl" />
+											</h3>
+											<p class="text-sm text-surface-400">{tier.tagline}</p>
+										</div>
+										<ul class="list-disc ml-5 space-y-2 text-surface-200">
+											{#each tier.perks as perk}
+												{#if perk.startsWith('Bronze / Silver / Gold')}
+													<li>
+														<span class="medal bronze">Bronze</span>
+														<span class="text-surface-400"> / </span>
+														<span class="medal silver">Silver</span>
+														<span class="text-surface-400"> / </span>
+														<span class="medal gold">Gold</span>
+														medals for top 3 placements
+													</li>
+												{:else}
+													<li>{perk}</li>
+												{/if}
+											{/each}
+										</ul>
+										{#if tier.featuredPerks?.length}
+											<div class="space-y-1 pt-1 ml-5">
+												{#each tier.featuredPerks as perk}
+													<FeaturedPerk
+														before={perk.before ?? ''}
+														highlight={perk.highlight}
+														after={perk.after ?? ''}
+														tone={perk.tone}
+													/>
+												{/each}
+											</div>
+										{/if}
+									</div>
+								{/each}
 
-								<div class="signup-panel p-5 space-y-3">
-									<h3 class="font-bold">Chance with your entry fee</h3>
-									<ul class="list-disc list-inside space-y-2 text-surface-200">
-										<li>Daily Raffle on Event Days (up to $50 Gift Cards)</li>
-										<li>Giveaways</li>
-										<li>Chance to Win Custom-Made Big World Olympics Medals</li>
-										<li>Chance to Win Cash Prizes in Paid Events</li>
-										<li>Bragging Rights</li>
-									</ul>
-								</div>
-
-								<div class="signup-panel p-5 space-y-3">
-									<h3 class="font-bold">Why is there a fee?</h3>
-									<p class="text-surface-200">
-										Every participant gets back much more than ${MIN_ENTRY_FEE} in value and winners are eligible for medals
-										&amp; huge prizes.
-									</p>
-									<p class="text-surface-200">
-										The entry fee helps offset that cost, and guarantees that our sign-ups are legitimate, to
-										weed out flakers. Flakers ruin things for everyone because they skew the count and mess up
-										the schedule for legit participants. ${MIN_ENTRY_FEE} is a way to say "I'm serious about participating".
-									</p>
-								</div>
+								<p class="text-center text-sm text-surface-400">
+									<a href="/olympics" class="underline hover:text-primary-300">
+										Check out what was given out last Olympics.
+									</a>
+								</p>
+								<p class="text-center text-surface-300 font-medium">More tiers are coming.</p>
 							</div>
 						{:else if tabSet === 5}
 							{@const counts = availabilityCounts({ availability })}
@@ -968,6 +1099,16 @@
 										<div class="flex justify-between gap-4">
 											<dt class="text-surface-400">Phone</dt>
 											<dd>{phone.trim() || 'Not provided'}</dd>
+										</div>
+										<div class="flex justify-between gap-4">
+											<dt class="text-surface-400">Referred by</dt>
+											<dd>
+												{#if isSelfReferral}
+													None
+												{:else}
+													{normalizeReferralUsername(referredByUsername) || 'None'}
+												{/if}
+											</dd>
 										</div>
 									</dl>
 								</div>
@@ -1042,17 +1183,14 @@
 
 								<div class="signup-panel p-5">
 									<div class="flex items-center justify-between mb-3">
-										<h3 class="font-bold">Payment</h3>
+										<h3 class="font-bold">Tiers</h3>
 										<button type="button" class="btn btn-sm variant-ghost-surface" on:click={() => (tabSet = 4)}>
 											View
 										</button>
 									</div>
 									<p>
-										<strong>${MIN_ENTRY_FEE} minimum</strong> via Ko-fi on the next screen — required to
-										complete sign-up.
-									</p>
-									<p class="text-sm text-surface-400 mt-1">
-										Extra support is optional and goes to the prize pool.
+										Sign-up is free (Free Spirit). After you submit, donate on Ko-fi or refer friends to
+										unlock Citizen and Protagonist. More tiers are coming.
 									</p>
 								</div>
 							</div>
@@ -1086,7 +1224,7 @@
 							? 'Submitting...'
 							: data.existingSubmission
 								? 'Save changes'
-								: 'Submit & continue to payment'}
+								: 'Submit sign-up'}
 					</button>
 				{/if}
 			</div>
@@ -1105,6 +1243,74 @@
 		border: 1px solid rgb(148 163 184 / 0.16);
 		backdrop-filter: blur(12px);
 		border-radius: 1rem;
+	}
+
+	.earn-cta-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.85rem;
+	}
+
+	@media (min-width: 640px) {
+		.earn-cta-grid {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+
+	.earn-cta {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.35rem;
+		text-align: left;
+		padding: 1.15rem 1.2rem;
+		border-radius: 1rem;
+		border: 1px solid rgb(148 163 184 / 0.22);
+		background: rgb(15 23 42 / 0.55);
+		color: inherit;
+		transition:
+			transform 140ms ease,
+			border-color 140ms ease,
+			box-shadow 140ms ease;
+	}
+
+	.earn-cta:hover {
+		transform: translateY(-2px);
+	}
+
+	.earn-cta.refer {
+		border-color: rgb(244 114 182 / 0.55);
+		box-shadow: 0 0 0 1px rgb(244 114 182 / 0.12), 0 12px 28px rgb(244 114 182 / 0.12);
+	}
+
+	.earn-cta.donate {
+		border-color: rgb(251 191 36 / 0.7);
+		background: linear-gradient(180deg, rgb(245 158 11 / 0.16), rgb(15 23 42 / 0.55));
+		box-shadow: 0 0 0 1px rgb(251 191 36 / 0.18), 0 14px 32px rgb(245 158 11 / 0.18);
+	}
+
+	.earn-cta-kicker {
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: rgb(203 213 225);
+	}
+
+	.earn-cta.donate .earn-cta-kicker {
+		color: rgb(252 211 77);
+	}
+
+	.earn-cta-title {
+		font-size: 1.45rem;
+		font-weight: 800;
+		line-height: 1.15;
+	}
+
+	.earn-cta-copy {
+		font-size: 0.92rem;
+		color: rgb(203 213 225);
+		line-height: 1.4;
 	}
 
 	.nation-list {
@@ -1154,6 +1360,27 @@
 		border-radius: 999px;
 		background: rgb(148 163 184 / 0.18);
 		color: rgb(203 213 225);
+	}
+
+	.nation-option-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.4rem;
+		flex-shrink: 0;
+	}
+
+	.referrer-badge {
+		flex-shrink: 0;
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		background: rgb(244 114 182 / 0.18);
+		color: rgb(251 207 232);
+		border: 1px solid rgb(244 114 182 / 0.45);
 	}
 
 	.color-swatches {
@@ -1231,5 +1458,24 @@
 		border-radius: 0.75rem;
 		border: 1px dashed rgb(148 163 184 / 0.28);
 		background: rgb(15 23 42 / 0.28);
+	}
+
+	.medal {
+		font-weight: 800;
+	}
+
+	.medal.bronze {
+		color: #cd7f32;
+		text-shadow: 0 0 10px rgb(205 127 50 / 0.45);
+	}
+
+	.medal.silver {
+		color: #e2e8f0;
+		text-shadow: 0 0 10px rgb(226 232 240 / 0.4);
+	}
+
+	.medal.gold {
+		color: #fbbf24;
+		text-shadow: 0 0 12px rgb(251 191 36 / 0.55);
 	}
 </style>

@@ -5,6 +5,9 @@
 	export let selected = false;
 
 	let showImage = false;
+
+	$: imageSrc = game.imageUrl?.trim() || gameBannerSrc(game.id);
+	$: imageSrc, (showImage = false);
 </script>
 
 <button
@@ -16,7 +19,7 @@
 	<div class="absolute inset-0 overflow-hidden rounded-[inherit] pointer-events-none">
 		<div class="absolute inset-0 bg-gradient-to-br from-primary-600/70 via-surface-800 to-secondary-600/50" />
 		<img
-			src={gameBannerSrc(game.id)}
+			src={imageSrc}
 			alt=""
 			class="banner-media absolute inset-0 w-full h-full object-cover {showImage ? '' : 'hidden'}"
 			on:load={() => (showImage = true)}
@@ -29,12 +32,14 @@
 		<div class="flex flex-wrap gap-1.5">
 			{#each game.badges as badgeId}
 				{@const badge = GAME_BADGES[badgeId]}
-				<span class="badge-wrap relative">
-					<span class="badge {badge.classes} text-[10px] px-2 py-0.5 font-semibold tracking-wide">
-						{badge.label}
+				{#if badge}
+					<span class="badge-wrap relative">
+						<span class="badge {badge.classes} text-[10px] px-2 py-0.5 font-semibold tracking-wide">
+							{badge.label}
+						</span>
+						<span class="badge-tip">{badge.tooltip}</span>
 					</span>
-					<span class="badge-tip">{badge.tooltip}</span>
-				</span>
+				{/if}
 			{/each}
 		</div>
 
