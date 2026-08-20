@@ -22,8 +22,8 @@ export function extractPaymentCode(message: string | null | undefined): string |
 	return match ? match[0] : null;
 }
 
-export const AVAILABILITY_START = '2026-08-17';
-export const AVAILABILITY_END = '2026-09-20';
+export const AVAILABILITY_START = '2026-08-24';
+export const AVAILABILITY_END = '2026-09-27';
 
 export const SEED_NATIONS = [
 	{ id: 'maharnegonia', name: 'Maharnegonia', captain: 'Noonz', colorScheme: 'crimson', emojis: ['⚔️', '🛡️'] },

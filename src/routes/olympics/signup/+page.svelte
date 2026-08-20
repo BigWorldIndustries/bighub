@@ -34,6 +34,7 @@
 	import NationTitle from '$lib/components/olympics/NationTitle.svelte';
 	import TierTitle from '$lib/components/olympics/TierTitle.svelte';
 	import FeaturedPerk from '$lib/components/olympics/FeaturedPerk.svelte';
+	import PrizeGalleries from '$lib/components/olympics/PrizeGalleries.svelte';
 	import { allDaysAvailable, defaultAvailability } from '$lib/olympics/dates';
 	import {
 		GAME_IDS,
@@ -606,10 +607,9 @@
 					{/each}
 				</ul>
 				<p class="text-sm text-center text-surface-400">
-					<a href="/olympics" class="underline hover:text-primary-300">
-						Check out what was given out last Olympics.
-					</a>
+					Check out what was given out last Olympics.
 				</p>
+				<PrizeGalleries compact />
 			</div>
 
 			<div id="earn-refer" class="signup-panel p-5 mb-6 max-w-2xl mx-auto space-y-3 scroll-mt-8">
@@ -980,7 +980,7 @@
 									Please provide your free availability for the next few weeks as accurately as possible.
 								</p>
 								<p class="text-surface-300 max-w-3xl mx-auto text-center leading-relaxed">
-									All events will take place in ET evening hours unless otherwise specified. Exact times
+									All events will take place in ET evening hours (6pm-11pm) unless otherwise specified. Exact times
 									will be provided once details are confirmed.
 								</p>
 								<p class="text-surface-400 max-w-3xl mx-auto text-center text-sm">
@@ -1066,11 +1066,10 @@
 								{/each}
 
 								<p class="text-center text-sm text-surface-400">
-									<a href="/olympics" class="underline hover:text-primary-300">
-										Check out what was given out last Olympics.
-									</a>
+									Check out what was given out last Olympics.
 								</p>
-								<p class="text-center text-surface-300 font-medium">More tiers are coming.</p>
+								<PrizeGalleries compact />
+								<p class="text-center text-surface-300 font-medium">More tiers coming based on community contributions. Wanna contribute prizes or merch to the Olympics loot and get paid for it? Reach out!</p>
 							</div>
 						{:else if tabSet === 5}
 							{@const counts = availabilityCounts({ availability })}
