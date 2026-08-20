@@ -48,7 +48,11 @@ export const GET = async ({ url, cookies }: any) => {
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
 	const storedState = cookies.get('oauth_state');
-	const returnTo = cookies.get('oauth_return_to') || '/nominate';
+	const storedReturnTo = cookies.get('oauth_return_to') || '/nominate';
+	const returnTo =
+		storedReturnTo.startsWith('/') && !storedReturnTo.startsWith('//') && !storedReturnTo.includes('\\')
+			? storedReturnTo
+			: '/nominate';
 
 	// Verify state parameter
 	if (!state || !storedState || state !== storedState) {

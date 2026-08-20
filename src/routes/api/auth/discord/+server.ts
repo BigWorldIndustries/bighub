@@ -18,7 +18,11 @@ export const GET = async ({ cookies, url }: any) => {
 	});
 
 	// Get the returnTo parameter if it exists, otherwise default to /nominate
-	const returnTo = url.searchParams.get('returnTo') || '/nominate';
+	const rawReturnTo = url.searchParams.get('returnTo') || '/nominate';
+	const returnTo =
+		rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') && !rawReturnTo.includes('\\')
+			? rawReturnTo
+			: '/nominate';
 	cookies.set('oauth_return_to', returnTo, {
 		path: '/',
 		httpOnly: true,

@@ -2,7 +2,6 @@ import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { ControlledError } from '../util/util.server';
 import {
 	FREE_AGENT_ID,
-	MIN_ENTRY_FEE,
 	OLYMPICS_FORM_ID,
 	SEED_NATIONS,
 	generatePaymentCode,
@@ -15,10 +14,12 @@ import {
 	parseNationEmojis
 } from '$lib/olympics/nationStyle';
 import { getAvailabilityDays } from '$lib/olympics/dates';
+import { normalizeReferralUsername, withDerivedXp } from '$lib/olympics/tiers';
 import type {
 	OlympicsDiscordAnnounce,
 	OlympicsFormData,
 	OlympicsNation,
+	OlympicsReferralLock,
 	OlympicsSuggestedGame
 } from '$lib/olympics/types';
 import { notifyOlympicsSignup } from './discord.server';
@@ -147,7 +148,6 @@ export function normalizeOlympicsFormData(
 
 		const existing = nations.find((nation) => nation.id === slug);
 		if (existing) {
-			// Creating a name that already exists → join that nation instead
 			nationId = existing.id;
 			nationName = existing.name;
 		} else {
@@ -186,8 +186,7 @@ export function normalizeOlympicsFormData(
 		availability[day.date] = status as AvailabilityStatus;
 	}
 
-	const actuallyCreated =
-		createdNation && !nations.some((nation) => nation.id === nationId);
+	const actuallyCreated = createdNation && !nations.some((nation) => nation.id === nationId);
 
 	const colorScheme =
 		actuallyCreated && typeof raw.colorScheme === 'string' && isNationColorId(raw.colorScheme)
@@ -209,7 +208,7 @@ export function normalizeOlympicsFormData(
 			games,
 			availability,
 			...(anyDateWithNotice ? { anyDateWithNotice: true } : {}),
-			entryAmount: MIN_ENTRY_FEE,
+			entryAmount: 0,
 			paymentStatus: 'pending' as const
 		},
 		newSuggestions
@@ -230,6 +229,79 @@ export function submissionsCollection(db: Firestore) {
 
 export function unmatchedPaymentsCollection(db: Firestore) {
 	return olympicsFormRef(db).collection('unmatchedPayments');
+}
+
+export function referralsCollection(db: Firestore) {
+	return olympicsFormRef(db).collection('referrals');
+}
+
+function pendingReferralItems(db: Firestore, usernameLower: string) {
+	return olympicsFormRef(db)
+		.collection('pendingReferralCredits')
+		.doc(usernameLower)
+		.collection('items');
+}
+
+export async function findOlympicsSubmissionByUsername(
+	db: Firestore,
+	username: string
+): Promise<{
+	discordUserId: string;
+	discordUsername: string;
+	form_data: OlympicsFormData;
+} | null> {
+	const normalized = normalizeReferralUsername(username);
+	if (!normalized) return null;
+
+	const snapshot = await submissionsCollection(db)
+		.where('discordUsernameLower', '==', normalized.toLowerCase())
+		.limit(2)
+		.get();
+
+	if (snapshot.size !== 1) return null;
+	const doc = snapshot.docs[0]!;
+	const data = doc.data() ?? {};
+	return {
+		discordUserId: doc.id,
+		discordUsername:
+			typeof data.discordUsername === 'string' ? data.discordUsername : normalized,
+		form_data: (data.form_data ?? {}) as OlympicsFormData
+	};
+}
+
+function lockedReferralFields(
+	lock: OlympicsReferralLock | undefined,
+	existing: Partial<OlympicsFormData>
+) {
+	const username =
+		(lock?.referrerUsername && lock.referrerUsername.trim()) ||
+		(typeof existing.referredByUsername === 'string' ? existing.referredByUsername.trim() : '');
+	const userId =
+		(typeof lock?.referrerUserId === 'string' && lock.referrerUserId) ||
+		(typeof existing.referredByUserId === 'string' ? existing.referredByUserId : '');
+	return {
+		...(username ? { referredByUsername: username } : {}),
+		...(userId ? { referredByUserId: userId } : {})
+	};
+}
+
+function asReferralLock(data: Record<string, unknown> | undefined): OlympicsReferralLock | undefined {
+	if (!data) return undefined;
+	return {
+		referrerUsername: typeof data.referrerUsername === 'string' ? data.referrerUsername : '',
+		referrerUsernameLower:
+			typeof data.referrerUsernameLower === 'string' ? data.referrerUsernameLower : '',
+		referrerUserId: typeof data.referrerUserId === 'string' ? data.referrerUserId : null,
+		credited: Boolean(data.credited)
+	};
+}
+
+function omitUndefined<T extends object>(value: T): T {
+	const next = { ...value } as T & Record<string, unknown>;
+	for (const key of Object.keys(next)) {
+		if (next[key] === undefined) delete next[key];
+	}
+	return next;
 }
 
 async function mintUniquePaymentCode(db: Firestore): Promise<string> {
@@ -257,6 +329,10 @@ export async function saveOlympicsSignup(
 	);
 
 	const submissionRef = submissionsCollection(db).doc(user.id);
+	const referralRef = referralsCollection(db).doc(user.id);
+	const usernameLower = user.username.toLowerCase();
+	const pendingQuery = pendingReferralItems(db, usernameLower);
+
 	const existingSnap = await submissionRef.get();
 	const existingForm = (existingSnap.data()?.form_data ?? {}) as Partial<OlympicsFormData>;
 
@@ -265,29 +341,128 @@ export async function saveOlympicsSignup(
 			? existingForm.paymentCode
 			: await mintUniquePaymentCode(db);
 
-	const alreadyPaid = existingForm.paymentStatus === 'paid';
-	const form_data: OlympicsFormData = {
-		...normalized,
-		paymentCode,
-		paymentStatus: alreadyPaid ? 'paid' : 'pending',
-		...(alreadyPaid
-			? {
-					paidAmount: existingForm.paidAmount,
-					kofiTransactionId: existingForm.kofiTransactionId,
-					paidAt: existingForm.paidAt
-				}
-			: {})
-	};
-
-	const nationRef = nationsCollection(db).doc(form_data.nationId);
+	const nationRef = nationsCollection(db).doc(normalized.nationId);
 	const paymentCodeRef = paymentCodesCollection(db).doc(paymentCode);
 	const existingAnnounce = existingSnap.data()?.discordAnnounce as
 		| OlympicsDiscordAnnounce
 		| undefined;
 
 	await db.runTransaction(async (tx) => {
+		const submissionInTx = await tx.get(submissionRef);
+		const referralSnap = await tx.get(referralRef);
+		const pendingSnap = await tx.get(pendingQuery);
+		const isNew = !submissionInTx.exists;
+		const currentForm = (submissionInTx.data()?.form_data ?? existingForm) as Partial<OlympicsFormData>;
+		const existingLock = asReferralLock(referralSnap.data() as Record<string, unknown> | undefined);
+
+		const requestedRaw = isNew ? normalizeReferralUsername(rawFormData.referredByUsername) : '';
+		const requested =
+			requestedRaw && requestedRaw.toLowerCase() !== usernameLower ? requestedRaw : '';
+
+		const referrerQuery =
+			isNew && !existingLock && requested
+				? await tx.get(
+						submissionsCollection(db)
+							.where('discordUsernameLower', '==', requested.toLowerCase())
+							.limit(2)
+					)
+				: null;
+
+		const pendingReferralSnaps = await Promise.all(
+			pendingSnap.docs.map((doc) => tx.get(referralsCollection(db).doc(doc.id)))
+		);
+
 		const existingNation = Boolean(rawFormData.createdNation) ? await tx.get(nationRef) : null;
 		const suggestionItems = await readNewSuggestedGames(tx, db, newSuggestions);
+
+		let pendingCredits = 0;
+		for (let i = 0; i < pendingSnap.docs.length; i++) {
+			const pendingDoc = pendingSnap.docs[i]!;
+			const lockSnap = pendingReferralSnaps[i]!;
+			if (!lockSnap.exists) continue;
+			if (lockSnap.data()?.credited) {
+				tx.delete(pendingDoc.ref);
+				continue;
+			}
+			pendingCredits += 1;
+			tx.update(lockSnap.ref, {
+				credited: true,
+				referrerUserId: user.id
+			});
+			tx.delete(pendingDoc.ref);
+		}
+
+		let referralFields: {
+			referredByUsername?: string;
+			referredByUserId?: string;
+		} = lockedReferralFields(existingLock, currentForm);
+
+		if (!referralSnap.exists) {
+			if (isNew && requested) {
+				const referrerDoc = referrerQuery?.size === 1 ? referrerQuery.docs[0] : undefined;
+				const referrerId = referrerDoc?.id;
+				const canCredit = Boolean(referrerId && referrerId !== user.id);
+
+				tx.set(referralRef, {
+					referrerUsername: requested,
+					referrerUsernameLower: requested.toLowerCase(),
+					referrerUserId: canCredit ? referrerId : null,
+					credited: canCredit,
+					createdAt: FieldValue.serverTimestamp()
+				});
+
+				referralFields = {
+					referredByUsername: requested,
+					...(canCredit && referrerId ? { referredByUserId: referrerId } : {})
+				};
+
+				if (canCredit && referrerDoc && referrerId) {
+					const referrerForm = (referrerDoc.data()?.form_data ?? {}) as Partial<OlympicsFormData>;
+					const credited = withDerivedXp({
+						...referrerForm,
+						referralCount: (referrerForm.referralCount ?? 0) + 1
+					});
+					tx.update(referrerDoc.ref, {
+						'form_data.referralCount': credited.referralCount,
+						'form_data.xp': credited.xp,
+						'form_data.tier': credited.tier,
+						'form_data.paidAmount': credited.paidAmount,
+						updatedAt: FieldValue.serverTimestamp()
+					});
+				} else {
+					tx.set(pendingReferralItems(db, requested.toLowerCase()).doc(user.id), {
+						referredUserId: user.id,
+						referrerUsernameLower: requested.toLowerCase(),
+						createdAt: FieldValue.serverTimestamp()
+					});
+				}
+			} else {
+				tx.set(referralRef, {
+					referrerUsername: referralFields.referredByUsername ?? '',
+					referrerUsernameLower: (referralFields.referredByUsername ?? '').toLowerCase(),
+					referrerUserId: referralFields.referredByUserId ?? null,
+					credited: true,
+					createdAt: FieldValue.serverTimestamp()
+				});
+			}
+		}
+
+		const alreadyPaid = currentForm.paymentStatus === 'paid' || (currentForm.paidAmount ?? 0) > 0;
+		const form_data: OlympicsFormData = omitUndefined(
+			withDerivedXp({
+				...normalized,
+				paymentCode,
+				paymentStatus: alreadyPaid ? ('paid' as const) : ('pending' as const),
+				paidAmount: currentForm.paidAmount,
+				referralCount: (currentForm.referralCount ?? 0) + pendingCredits,
+				...(currentForm.kofiTransactionId
+					? { kofiTransactionId: currentForm.kofiTransactionId }
+					: {}),
+				...(currentForm.paidAt ? { paidAt: currentForm.paidAt } : {}),
+				...(currentForm.payments ? { payments: currentForm.payments } : {}),
+				...referralFields
+			})
+		);
 
 		if (form_data.createdNation) {
 			if (existingNation?.exists) {
@@ -332,9 +507,9 @@ export async function saveOlympicsSignup(
 		tx.set(submissionRef, {
 			discordUserId: user.id,
 			discordUsername: user.username,
-			discordUsernameLower: user.username.toLowerCase(),
+			discordUsernameLower: usernameLower,
 			form_data,
-			submittedAt: existingSnap.data()?.submittedAt ?? FieldValue.serverTimestamp(),
+			submittedAt: submissionInTx.data()?.submittedAt ?? FieldValue.serverTimestamp(),
 			updatedAt: FieldValue.serverTimestamp(),
 			...(existingAnnounce ? { discordAnnounce: existingAnnounce } : {})
 		});
@@ -348,8 +523,8 @@ export async function saveOlympicsSignup(
 	if (!existingAnnounce?.submittedAt) {
 		const posted = await notifyOlympicsSignup({
 			discordUserId: user.id,
-			nationName: form_data.nationName,
-			nationId: form_data.nationId
+			nationName: normalized.nationName,
+			nationId: normalized.nationId
 		});
 		if (posted) {
 			await submissionRef.update({
@@ -358,10 +533,11 @@ export async function saveOlympicsSignup(
 		}
 	}
 
-	return form_data;
+	const saved = await submissionRef.get();
+	return (saved.data()?.form_data ?? normalized) as OlympicsFormData;
 }
 
-export async function ensureOlympicsPaymentCode(
+export async function hydrateOlympicsSubmission(
 	db: Firestore,
 	user: { id: string; username: string }
 ): Promise<string | null> {
@@ -370,19 +546,50 @@ export async function ensureOlympicsPaymentCode(
 	if (!snap.exists) return null;
 
 	const form = (snap.data()?.form_data ?? {}) as Partial<OlympicsFormData>;
-	if (typeof form.paymentCode === 'string' && form.paymentCode.startsWith('BWO-')) {
-		return form.paymentCode;
+	let paymentCode =
+		typeof form.paymentCode === 'string' && form.paymentCode.startsWith('BWO-')
+			? form.paymentCode
+			: null;
+
+	if (!paymentCode) {
+		paymentCode = await mintUniquePaymentCode(db);
+		await paymentCodesCollection(db).doc(paymentCode).set({
+			discordUserId: user.id,
+			paymentCode
+		});
 	}
 
-	const paymentCode = await mintUniquePaymentCode(db);
-	await submissionRef.update({
-		'form_data.paymentCode': paymentCode,
-		discordUsernameLower: user.username.toLowerCase(),
-		updatedAt: FieldValue.serverTimestamp()
+	const derived = withDerivedXp({
+		...form,
+		paymentCode,
+		referralCount: form.referralCount ?? 0,
+		paidAmount: form.paidAmount ?? 0
 	});
-	await paymentCodesCollection(db).doc(paymentCode).set({
-		discordUserId: user.id,
-		paymentCode
-	});
+
+	const xpChanged =
+		form.xp !== derived.xp ||
+		form.tier !== derived.tier ||
+		form.paymentCode !== paymentCode ||
+		form.referralCount !== derived.referralCount;
+
+	if (xpChanged) {
+		await submissionRef.update({
+			'form_data.paymentCode': paymentCode,
+			'form_data.paidAmount': derived.paidAmount,
+			'form_data.referralCount': derived.referralCount,
+			'form_data.xp': derived.xp,
+			'form_data.tier': derived.tier,
+			discordUsernameLower: user.username.toLowerCase(),
+			updatedAt: FieldValue.serverTimestamp()
+		});
+	}
+
 	return paymentCode;
+}
+
+export async function ensureOlympicsPaymentCode(
+	db: Firestore,
+	user: { id: string; username: string }
+): Promise<string | null> {
+	return hydrateOlympicsSubmission(db, user);
 }

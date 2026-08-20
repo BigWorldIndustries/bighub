@@ -20,13 +20,14 @@ export interface OlympicsGame {
 	title: string;
 	badges: BadgeId[];
 	note?: string;
+	imageUrl?: string;
 }
 
 export const GAME_BADGES: Record<BadgeId, GameBadge> = {
 	gifted: {
 		id: 'gifted',
 		label: 'Gifted Game',
-		tooltip: "Participants will be gifted this game if they don't already have it.",
+		tooltip: "Citizen+ participants will be gifted this game if they don't already have it.",
 		classes: 'variant-filled-primary'
 	},
 	ftp: {
@@ -123,9 +124,43 @@ export const OLYMPICS_GAMES: OlympicsGame[] = [
 
 export const GAME_IDS = new Set(OLYMPICS_GAMES.map((game) => game.id));
 export const SUGGESTED_GAME_MAX_LENGTH = 40;
+const BADGE_ID_SET = new Set<string>(Object.keys(GAME_BADGES));
 
-export function asSuggestedGame(id: string, title: string): OlympicsGame {
-	return { id, title, badges: ['suggested'] };
+export function isBadgeId(value: unknown): value is BadgeId {
+	return typeof value === 'string' && BADGE_ID_SET.has(value);
+}
+
+export function asSuggestedGame(
+	id: string,
+	title: string,
+	extras?: { badges?: BadgeId[]; note?: string; imageUrl?: string }
+): OlympicsGame {
+	return {
+		id,
+		title,
+		badges: extras?.badges?.length ? extras.badges : ['suggested'],
+		...(extras?.note ? { note: extras.note } : {}),
+		...(extras?.imageUrl ? { imageUrl: extras.imageUrl } : {})
+	};
+}
+
+export function overlayOfficialGame(
+	game: OlympicsGame,
+	overlay?: {
+		title?: string;
+		badges?: BadgeId[];
+		note?: string;
+		imageUrl?: string;
+	}
+): OlympicsGame {
+	if (!overlay) return game;
+	return {
+		...game,
+		title: overlay.title?.trim() || game.title,
+		badges: overlay.badges ?? game.badges,
+		note: overlay.note ?? game.note,
+		imageUrl: overlay.imageUrl ?? game.imageUrl
+	};
 }
 
 export function compareGamesByPopularity(
